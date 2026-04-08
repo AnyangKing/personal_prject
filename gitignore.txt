@@ -1,0 +1,39 @@
+# 딥러닝 모델 파일 제외
+*.pt
+*.pth
+*.h5
+*.npz
+*.pkl
+
+# 대용량 데이터 및 압축 파일 제외
+*.zip
+*.tar.gz
+*.csv
+*.npy
+
+# 파이썬 실행 시 생기는 임시 폴더 제외
+__pycache__/
+.ipynb_checkpoints/
+
+# 윈도우 시스템 폴더 (Permission denied 방지)
+Application Data/
+Cookies/
+Local Settings/
+My Documents/
+NetHood/
+PrintHood/
+Recent/
+SendTo/
+Templates/
+"시작 메뉴/"
+Documents/
+
+# AI 툴 및 아나콘다 설정 파일
+.anaconda/
+.claude*
+.claude.json
+.claude.json.backup
+
+# 기타 로그 및 데이터
+*.log
+wandb/

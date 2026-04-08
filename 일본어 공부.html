@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>일본어 히라가나 공부</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #1a3a6b; color: white; min-height: 100vh; }
+
+    /* ── 헤더 ── */
+    header { background: #0f2548; padding: 14px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); flex-wrap: wrap; }
+    header h1 { font-size: 1.3rem; font-weight: 700; white-space: nowrap; }
+    nav { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+    nav button { background: transparent; border: 2px solid rgba(255,255,255,0.4); color: white; padding: 7px 18px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+    nav button.active, nav button:hover { background: white; color: #1a3a6b; border-color: white; }
+
+    .container { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+    .section-title { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin: 16px 0 10px; letter-spacing: 1px; }
+
+    /* ── 히라가나/가타카나 표 ── */
+    #page-chart { display: block; }
+    #page-katakana, #page-quiz, #page-learn { display: none; }
+
+    .chart-tabs { display: flex; gap: 0; margin-bottom: 14px; border-radius: 10px; overflow: hidden; width: fit-content; }
+    .chart-tab { padding: 7px 22px; font-size: 0.88rem; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); border: none; transition: all 0.2s; }
+    .chart-tab.active { background: rgba(255,255,255,0.25); color: white; }
+    /* 오십음도 표 */
+    .chart-table { display: grid; grid-template-columns: 46px repeat(5, 1fr); gap: 6px; max-width: 520px; }
+    .ct-corner   { }
+    .ct-col-hdr  { text-align: center; padding: 5px 4px; font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.4); letter-spacing: 1px; }
+    .ct-row-lbl  { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.4); }
+    .kana-cell { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.15s; user-select: none; }
+    .kana-cell:hover { background: rgba(255,255,255,0.28); transform: scale(1.08); }
+    .kana-cell .kana { font-size: 1.5rem; display: block; }
+    .kana-cell .roma { font-size: 0.62rem; color: rgba(255,255,255,0.65); margin-top: 2px; display: block; }
+    .kana-cell.empty { background: transparent; border: none; pointer-events: none; }
+
+    /* ── 퀴즈 레이아웃 ── */
+    .quiz-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .quiz-main { flex: 1; min-width: 0; }
+    .quiz-box { background: rgba(255,255,255,0.1); border-radius: 16px; padding: 28px 22px; text-align: center; }
+    .quiz-label { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+    .progress-wrap { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 12px; }
+    .progress-track { flex: 1; max-width: 260px; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #4fc3f7; border-radius: 3px; transition: width 0.3s; }
+    .progress-text { font-size: 0.82rem; color: rgba(255,255,255,0.65); white-space: nowrap; }
+    .quiz-kana { font-size: 5rem; margin: 14px 0; line-height: 1; }
+    .quiz-question { font-size: 1rem; margin-bottom: 20px; color: rgba(255,255,255,0.85); }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .choice-btn { background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 13px; border-radius: 10px; font-size: 1.05rem; cursor: pointer; transition: all 0.15s; }
+    .choice-btn:hover:not(:disabled) { background: rgba(255,255,255,0.3); transform: scale(1.03); }
+    .choice-btn.correct { background: #27ae60; border-color: #2ecc71; }
+    .choice-btn.wrong   { background: #c0392b; border-color: #e74c3c; }
+    .choice-btn:disabled { cursor: default; }
+    .result-msg { font-size: 1.1rem; font-weight: 700; min-height: 1.5rem; margin-bottom: 10px; }
+    .action-btn { background: white; color: #1a3a6b; border: none; padding: 11px 32px; border-radius: 24px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: transform 0.15s; display: none; }
+    .action-btn:hover { transform: scale(1.05); }
+    .result-screen { display: none; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 32px 22px; text-align: center; }
+    .result-screen h2 { font-size: 1.5rem; margin-bottom: 6px; }
+    .big-score { font-size: 3.2rem; font-weight: 900; margin: 14px 0 4px; }
+    .result-screen .sub { font-size: 0.95rem; color: rgba(255,255,255,0.65); margin-bottom: 20px; }
+    .detail-list { text-align: left; margin: 0 auto 20px; max-width: 340px; }
+    .detail-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; }
+    .detail-item .di-kana { font-size: 1.2rem; width: 28px; text-align: center; }
+    .detail-item .di-roma { flex: 1; color: rgba(255,255,255,0.8); }
+    .retry-btn { background: white; color: #1a3a6b; border: none; padding: 11px 32px; border-radius: 24px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: transform 0.15s; }
+    .retry-btn:hover { transform: scale(1.05); }
+
+    /* ── 기록 사이드바 ── */
+    .history-panel { width: 210px; flex-shrink: 0; }
+    .history-panel h3 { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 8px; letter-spacing: 1px; }
+    .history-list { display: flex; flex-direction: column; gap: 7px; }
+    .history-item { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 9px 11px; cursor: pointer; transition: all 0.15s; }
+    .history-item:hover { background: rgba(255,255,255,0.2); }
+    .hi-date { font-size: 0.68rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+    .hi-score { font-size: 1rem; font-weight: 700; }
+    .hi-bar-wrap { margin-top: 4px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .hi-bar { height: 100%; border-radius: 2px; }
+    .history-empty { font-size: 0.82rem; color: rgba(255,255,255,0.3); text-align: center; margin-top: 12px; }
+
+    /* ── 모달 ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #1e4080; border-radius: 16px; padding: 26px 22px; width: 340px; max-height: 80vh; overflow-y: auto; position: relative; }
+    .modal h3 { font-size: 1.05rem; margin-bottom: 3px; }
+    .modal .modal-sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+    .modal .modal-score { font-size: 2.2rem; font-weight: 900; margin-bottom: 14px; }
+    .modal-close { position: absolute; top: 12px; right: 14px; background: transparent; border: none; color: rgba(255,255,255,0.6); font-size: 1.2rem; cursor: pointer; }
+    .modal-close:hover { color: white; }
+
+    /* ── 커리큘럼 페이지 ── */
+    .learn-overview { display: block; }
+    .lesson-view    { display: none; }
+
+    .overall-progress { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+    .overall-progress h3 { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-bottom: 8px; }
+    .overall-progress .op-track { height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+    .overall-progress .op-fill  { height: 100%; background: linear-gradient(90deg,#4fc3f7,#29b6f6); border-radius: 4px; transition: width 0.4s; }
+    .overall-progress .op-text  { font-size: 0.82rem; color: rgba(255,255,255,0.6); }
+
+    .month-section { margin-bottom: 28px; }
+    .month-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .month-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; font-weight: 700; }
+    .month-badge.m1 { background: rgba(79,195,247,0.25); }
+    .month-badge.m2 { background: rgba(129,199,132,0.25); }
+    .month-badge.m3 { background: rgba(255,183,77,0.25); }
+    .month-title { font-size: 1rem; font-weight: 700; }
+    .month-prog { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-left: auto; }
+
+    .unit-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+
+    .unit-card {
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px 10px;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: center;
+      position: relative;
+    }
+    .unit-card:hover { background: rgba(255,255,255,0.18); transform: translateY(-2px); }
+    .unit-card.done  { background: rgba(79,195,247,0.15); border-color: rgba(79,195,247,0.5); }
+    .unit-card.done:hover { background: rgba(79,195,247,0.25); }
+    .unit-card .uc-num  { font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .unit-card .uc-title{ font-size: 0.82rem; font-weight: 600; line-height: 1.3; }
+    .unit-card .uc-check{ position: absolute; top: 7px; right: 9px; font-size: 0.85rem; }
+
+    /* ── 레슨 뷰 ── */
+    .lesson-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .back-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: background 0.15s; }
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+    .lesson-title { font-size: 1.2rem; font-weight: 700; }
+
+    .step-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+    .step-tab { flex: 1; text-align: center; padding: 9px 6px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); transition: all 0.2s; }
+    .step-tab.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: white; }
+    .step-tab.done   { background: rgba(79,195,247,0.2); border-color: rgba(79,195,247,0.5); color: #4fc3f7; }
+
+    /* 배우기 카드 */
+    .learn-card-wrap { max-width: 400px; margin: 0 auto; }
+    .learn-card {
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 40px 24px 32px;
+      text-align: center;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .lc-kana    { font-size: 5rem; line-height: 1; margin-bottom: 8px; }
+    .lc-reading { font-size: 1.5rem; font-weight: 700; color: #4fc3f7; margin-bottom: 6px; }
+    .lc-meaning { font-size: 1rem; color: rgba(255,255,255,0.7); }
+    .lc-word    { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
+    .lc-kr-reading { font-size: 1.1rem; color: #81c784; margin-bottom: 6px; }
+
+    .card-nav { display: flex; align-items: center; justify-content: center; gap: 16px; }
+    .card-nav-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; transition: background 0.15s; }
+    .card-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+    .card-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .card-dots { display: flex; gap: 5px; }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: background 0.2s; }
+    .card-dot.active { background: white; }
+
+    .step-done-btn { display: block; width: fit-content; margin: 18px auto 0; background: white; color: #1a3a6b; border: none; padding: 12px 36px; border-radius: 24px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s; }
+    .step-done-btn:hover { transform: scale(1.05); }
+
+    /* 연습 (플래시카드) */
+    .flashcard-wrap { max-width: 400px; margin: 0 auto; }
+    .flashcard {
+      width: 100%;
+      min-height: 220px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      cursor: pointer;
+      margin-bottom: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      transition: background 0.2s;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+    .flashcard:hover { background: rgba(255,255,255,0.18); }
+    .fc-front { font-size: 4rem; }
+    .fc-hint  { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-top: 10px; }
+    .fc-back  { display: none; flex-direction: column; align-items: center; gap: 6px; }
+    .fc-back .fcb-reading { font-size: 1.8rem; font-weight: 700; color: #4fc3f7; }
+    .fc-back .fcb-meaning { font-size: 1rem; color: rgba(255,255,255,0.7); }
+    .flashcard.flipped .fc-front { display: none; }
+    .flashcard.flipped .fc-hint  { display: none; }
+    .flashcard.flipped .fc-back  { display: flex; }
+
+    .fc-buttons { display: flex; gap: 12px; justify-content: center; }
+    .fc-btn { flex: 1; max-width: 160px; padding: 11px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: transform 0.15s; }
+    .fc-btn:hover { transform: scale(1.04); }
+    .fc-btn.know   { background: #27ae60; color: white; }
+    .fc-btn.unsure { background: rgba(255,255,255,0.2); color: white; }
+
+    .fc-progress-text { text-align: center; font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 12px; }
+
+    /* 레슨 완료 */
+    .lesson-complete { text-align: center; padding: 40px 20px; max-width: 400px; margin: 0 auto; }
+    .lc-emoji { font-size: 4rem; margin-bottom: 16px; }
+    .lc-h2    { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+    .lc-sub   { font-size: 0.95rem; color: rgba(255,255,255,0.65); margin-bottom: 28px; }
+
+    /* tooltip */
+    .tooltip { position: fixed; background: rgba(0,0,0,0.75); color: white; padding: 6px 14px; border-radius: 8px; font-size: 0.95rem; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 99; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🇯🇵 히라가나 마스터</h1>
+  <nav>
+    <button id="btn-chart"    class="active" onclick="showPage('chart')">히라가나 표</button>
+    <button id="btn-katakana" onclick="showPage('katakana')">가타카나 표</button>
+    <button id="btn-quiz"     onclick="showPage('quiz')">퀴즈</button>
+    <button id="btn-learn"    onclick="showPage('learn')">단계별 학습</button>
+  </nav>
+</header>
+
+<div class="container">
+
+  <!-- ══ 히라가나 표 ══ -->
+  <div id="page-chart">
+    <p class="section-title">글자를 클릭하면 발음을 확인할 수 있어요</p>
+    <div class="chart-grid" id="chart"></div>
+  </div>
+
+  <!-- ══ 가타카나 표 ══ -->
+  <div id="page-katakana">
+    <p class="section-title">히라가나와 발음이 같고 모양만 달라요 — 주로 외래어에 사용</p>
+    <div class="chart-grid" id="chart-kata"></div>
+  </div>
+
+  <!-- ══ 퀴즈 ══ -->
+  <div id="page-quiz">
+    <div class="quiz-layout">
+      <div class="quiz-main">
+        <div class="quiz-box" id="quiz-box">
+          <div class="quiz-label">가나 퀴즈</div>
+          <div class="progress-wrap">
+            <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+            <span class="progress-text" id="prog-text">0 / 10</span>
+          </div>
+          <div class="quiz-kana" id="quiz-kana">?</div>
+          <div class="quiz-question">이 글자의 발음은?</div>
+          <div class="choices" id="choices"></div>
+          <div class="result-msg" id="result-msg"></div>
+          <button class="action-btn" id="next-btn" onclick="nextQuestion()">다음 ▶</button>
+        </div>
+        <div class="result-screen" id="result-screen">
+          <h2 id="rs-title"></h2>
+          <div class="big-score" id="rs-score"></div>
+          <div class="sub" id="rs-sub"></div>
+          <div class="detail-list" id="rs-detail"></div>
+          <button class="retry-btn" onclick="startQuiz()">다시 풀기 ▶</button>
+        </div>
+      </div>
+      <div class="history-panel">
+        <h3>퀴즈 기록</h3>
+        <div class="history-list" id="history-list"><p class="history-empty">아직 기록이 없어요</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 단계별 학습 ══ -->
+  <div id="page-learn">
+
+    <!-- 커리큘럼 개요 -->
+    <div class="learn-overview" id="learn-overview">
+      <div class="overall-progress">
+        <h3>전체 진행률</h3>
+        <div class="op-track"><div class="op-fill" id="op-fill" style="width:0%"></div></div>
+        <div class="op-text" id="op-text">0 / 30 단원 완료</div>
+      </div>
+      <div id="curriculum-list"></div>
+    </div>
+
+    <!-- 레슨 뷰 -->
+    <div class="lesson-view" id="lesson-view">
+      <div class="lesson-header">
+        <button class="back-btn" onclick="closeLessonView()">← 목록으로</button>
+        <span class="lesson-title" id="lesson-title"></span>
+      </div>
+      <div class="step-tabs" id="step-tabs">
+        <div class="step-tab active" id="tab-learn">1. 배우기</div>
+        <div class="step-tab"        id="tab-practice">2. 연습</div>
+        <div class="step-tab"        id="tab-quiz">3. 퀴즈</div>
+      </div>
+      <div id="lesson-content"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- 모달 -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modal-title"></h3>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-score" id="modal-score"></div>
+    <div class="detail-list" id="modal-detail"></div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   데이터
+═══════════════════════════════════════════ */
+const KATAKANA = [
+  ['ア','a'],['イ','i'],['ウ','u'],['エ','e'],['オ','o'],
+  ['カ','ka'],['キ','ki'],['ク','ku'],['ケ','ke'],['コ','ko'],
+  ['サ','sa'],['シ','shi'],['ス','su'],['セ','se'],['ソ','so'],
+  ['タ','ta'],['チ','chi'],['ツ','tsu'],['テ','te'],['ト','to'],
+  ['ナ','na'],['ニ','ni'],['ヌ','nu'],['ネ','ne'],['ノ','no'],
+  ['ハ','ha'],['ヒ','hi'],['フ','fu'],['ヘ','he'],['ホ','ho'],
+  ['マ','ma'],['ミ','mi'],['ム','mu'],['メ','me'],['モ','mo'],
+  ['ヤ','ya'],null,['ユ','yu'],null,['ヨ','yo'],
+  ['ラ','ra'],['リ','ri'],['ル','ru'],['レ','re'],['ロ','ro'],
+  ['ワ','wa'],null,null,null,['ヲ','wo'],
+  ['ン','n'],null,null,null,null,
+];
+
+const HIRAGANA = [
+  ['あ','a'],['い','i'],['う','u'],['え','e'],['お','o'],
+  ['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko'],
+  ['さ','sa'],['し','shi'],['す','su'],['せ','se'],['そ','so'],
+  ['た','ta'],['ち','chi'],['つ','tsu'],['て','te'],['と','to'],
+  ['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no'],
+  ['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho'],
+  ['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo'],
+  ['や','ya'],null,['ゆ','yu'],null,['よ','yo'],
+  ['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro'],
+  ['わ','wa'],null,null,null,['を','wo'],
+  ['ん','n'],null,null,null,null,
+];
+const KANA_LIST = HIRAGANA.filter(Boolean);
+
+const CURRICULUM = [
+  // ── 1단계: 히라가나 (4주) ──
+  {id:1, month:1, title:'あ행', type:'kana', items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']]},
+  {id:2, month:1, title:'か행', type:'kana', items:[['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko']]},
+  {id:3, month:1, title:'さ행', type:'kana', items:[['さ','sa'],['し','shi'],['す','su'],['せ','se'],['そ','so']]},
+  {id:4, month:1, title:'た행', type:'kana', items:[['た','ta'],['ち','chi'],['つ','tsu'],['て','te'],['と','to']]},
+  {id:5, month:1, title:'な행', type:'kana', items:[['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']]},
+  {id:6, month:1, title:'は행', type:'kana', items:[['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho']]},
+  {id:7, month:1, title:'ま행', type:'kana', items:[['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']]},
+  {id:8, month:1, title:'や·ら행', type:'kana', items:[['や','ya'],['ゆ','yu'],['よ','yo'],['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']]},
+  {id:9, month:1, title:'わ행·ん', type:'kana', items:[['わ','wa'],['を','wo'],['ん','n']]},
+  {id:10, month:1, title:'히라가나\n총복습', type:'kana_review', items:null},
+
+  // ── 2단계: 가타카나 (4주) ──
+  {id:11, month:2, title:'ア행', type:'kana', items:[['ア','a'],['イ','i'],['ウ','u'],['エ','e'],['オ','o']]},
+  {id:12, month:2, title:'カ행', type:'kana', items:[['カ','ka'],['キ','ki'],['ク','ku'],['ケ','ke'],['コ','ko']]},
+  {id:13, month:2, title:'サ행', type:'kana', items:[['サ','sa'],['シ','shi'],['ス','su'],['セ','se'],['ソ','so']]},
+  {id:14, month:2, title:'タ행', type:'kana', items:[['タ','ta'],['チ','chi'],['ツ','tsu'],['テ','te'],['ト','to']]},
+  {id:15, month:2, title:'ナ행', type:'kana', items:[['ナ','na'],['ニ','ni'],['ヌ','nu'],['ネ','ne'],['ノ','no']]},
+  {id:16, month:2, title:'ハ행', type:'kana', items:[['ハ','ha'],['ヒ','hi'],['フ','fu'],['ヘ','he'],['ホ','ho']]},
+  {id:17, month:2, title:'マ행', type:'kana', items:[['マ','ma'],['ミ','mi'],['ム','mu'],['メ','me'],['モ','mo']]},
+  {id:18, month:2, title:'ヤ·ラ행', type:'kana', items:[['ヤ','ya'],['ユ','yu'],['ヨ','yo'],['ラ','ra'],['リ','ri'],['ル','ru'],['レ','re'],['ロ','ro']]},
+  {id:19, month:2, title:'ワ행·ン', type:'kana', items:[['ワ','wa'],['ヲ','wo'],['ン','n']]},
+  {id:20, month:2, title:'가타카나\n총복습', type:'kana_review', items:null},
+
+  // ── 3단계: 기초 단어 (4주) ──
+  {id:21, month:3, title:'숫자', type:'vocab', items:[
+    {w:'いち',r:'이치',m:'1'},    {w:'に',r:'니',m:'2'},
+    {w:'さん',r:'산',m:'3'},      {w:'よん',r:'욘',m:'4'},
+    {w:'ご',r:'고',m:'5'},        {w:'ろく',r:'로쿠',m:'6'},
+    {w:'なな',r:'나나',m:'7'},    {w:'はち',r:'하치',m:'8'},
+    {w:'きゅう',r:'큐',m:'9'},    {w:'じゅう',r:'쥬',m:'10'},
+  ]},
+  {id:22, month:3, title:'인사', type:'vocab', items:[
+    {w:'おはよう',r:'오하요',m:'좋은 아침'},
+    {w:'こんにちは',r:'콘니치와',m:'안녕하세요'},
+    {w:'こんばんは',r:'콘방와',m:'좋은 저녁'},
+    {w:'ありがとう',r:'아리가토',m:'감사합니다'},
+    {w:'すみません',r:'스미마셍',m:'실례합니다'},
+    {w:'はい',r:'하이',m:'네'},
+    {w:'いいえ',r:'이이에',m:'아니요'},
+    {w:'さようなら',r:'사요나라',m:'안녕히 가세요'},
+  ]},
+  {id:23, month:3, title:'색깔', type:'vocab', items:[
+    {w:'あか',r:'아카',m:'빨간색'},   {w:'あお',r:'아오',m:'파란색'},
+    {w:'きいろ',r:'키이로',m:'노란색'},{w:'しろ',r:'시로',m:'흰색'},
+    {w:'くろ',r:'쿠로',m:'검은색'},   {w:'みどり',r:'미도리',m:'초록색'},
+    {w:'ピンク',r:'핑쿠',m:'분홍색'},
+  ]},
+  {id:24, month:3, title:'음식', type:'vocab', items:[
+    {w:'ごはん',r:'고항',m:'밥'},       {w:'みず',r:'미즈',m:'물'},
+    {w:'おちゃ',r:'오차',m:'녹차'},     {w:'パン',r:'빵',m:'빵'},
+    {w:'すし',r:'스시',m:'초밥'},       {w:'ラーメン',r:'라멘',m:'라면'},
+    {w:'たまご',r:'타마고',m:'계란'},   {w:'にく',r:'니쿠',m:'고기'},
+  ]},
+  {id:25, month:3, title:'가족·사람', type:'vocab', items:[
+    {w:'わたし',r:'와타시',m:'나/저'},
+    {w:'おかあさん',r:'오카상',m:'어머니'},
+    {w:'おとうさん',r:'오토상',m:'아버지'},
+    {w:'おにいさん',r:'오니상',m:'오빠/형'},
+    {w:'おねえさん',r:'오네상',m:'언니/누나'},
+    {w:'ともだち',r:'토모다치',m:'친구'},
+  ]},
+  {id:26, month:3, title:'장소', type:'vocab', items:[
+    {w:'がっこう',r:'각코',m:'학교'},   {w:'えき',r:'에키',m:'역'},
+    {w:'みせ',r:'미세',m:'가게'},       {w:'いえ',r:'이에',m:'집'},
+    {w:'トイレ',r:'토이레',m:'화장실'}, {w:'コンビニ',r:'콤비니',m:'편의점'},
+    {w:'びょういん',r:'뵤인',m:'병원'},
+  ]},
+  {id:27, month:3, title:'기초 동사', type:'vocab', items:[
+    {w:'たべる',r:'타베루',m:'먹다'},   {w:'のむ',r:'노무',m:'마시다'},
+    {w:'みる',r:'미루',m:'보다'},       {w:'きく',r:'키쿠',m:'듣다'},
+    {w:'いく',r:'이쿠',m:'가다'},       {w:'くる',r:'쿠루',m:'오다'},
+    {w:'かう',r:'카우',m:'사다'},       {w:'よむ',r:'요무',m:'읽다'},
+  ]},
+  {id:28, month:3, title:'형용사', type:'vocab', items:[
+    {w:'おおきい',r:'오키이',m:'크다'},   {w:'ちいさい',r:'치이사이',m:'작다'},
+    {w:'たかい',r:'타카이',m:'비싸다'},   {w:'やすい',r:'야스이',m:'싸다'},
+    {w:'あつい',r:'아츠이',m:'덥다'},     {w:'さむい',r:'사무이',m:'춥다'},
+    {w:'おいしい',r:'오이시이',m:'맛있다'},{w:'かわいい',r:'카와이이',m:'귀엽다'},
+  ]},
+  {id:29, month:3, title:'기초 문장', type:'vocab', items:[
+    {w:'〜です',r:'데스',m:'〜입니다'},
+    {w:'〜をください',r:'오쿠다사이',m:'〜주세요'},
+    {w:'いくらですか',r:'이쿠라데스카',m:'얼마예요?'},
+    {w:'どこですか',r:'도코데스카',m:'어디예요?'},
+    {w:'わかりません',r:'와카리마셍',m:'모르겠어요'},
+    {w:'もう一度',r:'모이치도',m:'한 번 더'},
+  ]},
+  {id:30, month:3, title:'최종\n복습', type:'vocab_review', items:null},
+];
+
+const MONTH_INFO = {
+  1: { label:'1단계', title:'히라가나 마스터', badge:'m1', desc:'일본어의 기초! 히라가나 46자를 정복해요.' },
+  2: { label:'2단계', title:'가타카나 마스터', badge:'m2', desc:'외래어 표기에 쓰는 가타카나를 배워요.' },
+  3: { label:'3단계', title:'기초 단어·문장', badge:'m3', desc:'일상에서 쓰는 단어와 표현을 익혀요.' },
+};
+
+/* ═══════════════════════════════════════════
+   공통 유틸
+═══════════════════════════════════════════ */
+function shuffle(arr) { return arr.slice().sort(() => Math.random() - 0.5); }
+
+function getReviewItems(unit) {
+  if (unit.type === 'kana_review') {
+    const month = unit.month;
+    return CURRICULUM.filter(u => u.month === month && u.type === 'kana').flatMap(u => u.items);
+  }
+  if (unit.type === 'vocab_review') {
+    return CURRICULUM.filter(u => u.month === 3 && u.type === 'vocab').flatMap(u => u.items);
+  }
+  return unit.items;
+}
+
+/* ═══════════════════════════════════════════
+   히라가나 표
+═══════════════════════════════════════════ */
+const HIRAGANA_ROWS = [
+  { label:'あ행', items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']] },
+  { label:'か행', items:[['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko']] },
+  { label:'さ행', items:[['さ','sa'],['し','shi'],['す','su'],['せ','se'],['そ','so']] },
+  { label:'た행', items:[['た','ta'],['ち','chi'],['つ','tsu'],['て','te'],['と','to']] },
+  { label:'な행', items:[['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']] },
+  { label:'は행', items:[['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho']] },
+  { label:'ま행', items:[['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']] },
+  { label:'や행', items:[['や','ya'],null,['ゆ','yu'],null,['よ','yo']] },
+  { label:'ら행', items:[['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']] },
+  { label:'わ행', items:[['わ','wa'],null,null,null,['を','wo']] },
+  { label:'ん',   items:[['ん','n'],null,null,null,null] },
+];
+
+const KATAKANA_ROWS = [
+  { label:'ア행', items:[['ア','a'],['イ','i'],['ウ','u'],['エ','e'],['オ','o']] },
+  { label:'カ행', items:[['カ','ka'],['キ','ki'],['ク','ku'],['ケ','ke'],['コ','ko']] },
+  { label:'サ행', items:[['サ','sa'],['シ','shi'],['ス','su'],['セ','se'],['ソ','so']] },
+  { label:'タ행', items:[['タ','ta'],['チ','chi'],['ツ','tsu'],['テ','te'],['ト','to']] },
+  { label:'ナ행', items:[['ナ','na'],['ニ','ni'],['ヌ','nu'],['ネ','ne'],['ノ','no']] },
+  { label:'ハ행', items:[['ハ','ha'],['ヒ','hi'],['フ','fu'],['ヘ','he'],['ホ','ho']] },
+  { label:'マ행', items:[['マ','ma'],['ミ','mi'],['ム','mu'],['メ','me'],['モ','mo']] },
+  { label:'ヤ행', items:[['ヤ','ya'],null,['ユ','yu'],null,['ヨ','yo']] },
+  { label:'ラ행', items:[['ラ','ra'],['リ','ri'],['ル','ru'],['レ','re'],['ロ','ro']] },
+  { label:'ワ행', items:[['ワ','wa'],null,null,null,['ヲ','wo']] },
+  { label:'ン',   items:[['ン','n'],null,null,null,null] },
+];
+
+function buildKanaTable(containerId, rowData) {
+  const wrap = document.getElementById(containerId);
+  wrap.className = 'chart-table';
+  // 헤더행
+  const corner = document.createElement('div'); corner.className = 'ct-corner'; wrap.appendChild(corner);
+  ['a','i','u','e','o'].forEach(v => {
+    const h = document.createElement('div'); h.className = 'ct-col-hdr'; h.textContent = v; wrap.appendChild(h);
+  });
+  // 데이터행
+  rowData.forEach(row => {
+    const lbl = document.createElement('div'); lbl.className = 'ct-row-lbl'; lbl.textContent = row.label; wrap.appendChild(lbl);
+    row.items.forEach(item => {
+      const cell = document.createElement('div');
+      if (!item) { cell.className = 'kana-cell empty'; }
+      else {
+        cell.className = 'kana-cell';
+        cell.innerHTML = `<span class="kana">${item[0]}</span><span class="roma">${item[1]}</span>`;
+        cell.addEventListener('mouseenter', e => showTip(e, item[1]));
+        cell.addEventListener('mouseleave', hideTip);
+      }
+      wrap.appendChild(cell);
+    });
+  });
+}
+
+function buildChart() { buildKanaTable('chart', HIRAGANA_ROWS); }
+function showTip(e, t) {
+  const el = document.getElementById('tooltip');
+  el.textContent = t; el.style.left=(e.clientX+12)+'px'; el.style.top=(e.clientY-32)+'px'; el.style.opacity=1;
+}
+function hideTip() { document.getElementById('tooltip').style.opacity=0; }
+
+/* ═══════════════════════════════════════════
+   퀴즈
+═══════════════════════════════════════════ */
+const QUIZ_SIZE = 10;
+let qIndex=0, qAnswered=false, currentKana=null, sessionLog=[];
+let history = JSON.parse(localStorage.getItem('kana_history')||'[]');
+
+function startQuiz() {
+  qIndex=0; sessionLog=[];
+  document.getElementById('quiz-box').style.display='block';
+  document.getElementById('result-screen').style.display='none';
+  nextQuestion();
+}
+
+function nextQuestion() {
+  if (qIndex >= QUIZ_SIZE) { showSessionResult(); return; }
+  qAnswered=false;
+  document.getElementById('result-msg').textContent='';
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
+  document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
+  currentKana = KANA_LIST[Math.floor(Math.random()*KANA_LIST.length)];
+  document.getElementById('quiz-kana').textContent=currentKana[0];
+  const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==currentKana[1])).slice(0,3);
+  const box=document.getElementById('choices'); box.innerHTML='';
+  shuffle([currentKana,...wrong]).forEach(opt=>{
+    const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt[1];
+    btn.onclick=()=>checkAnswer(opt[1]); box.appendChild(btn);
+  });
+}
+
+function checkAnswer(chosen) {
+  if (qAnswered) return; qAnswered=true;
+  const ok = chosen===currentKana[1];
+  sessionLog.push({kana:currentKana[0],roma:currentKana[1],chosen,correct:ok});
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===currentKana[1]) b.classList.add('correct');
+    else if(b.textContent===chosen)    b.classList.add('wrong');
+  });
+  document.getElementById('result-msg').textContent = ok ? '정답! 🎉' : `오답 😢  정답: ${currentKana[1]}`;
+  qIndex++;
+  document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
+  document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
+  const nb=document.getElementById('next-btn');
+  nb.style.display='inline-block'; nb.textContent=qIndex>=QUIZ_SIZE?'결과 보기 ▶':'다음 ▶';
+}
+
+function showSessionResult() {
+  const correct=sessionLog.filter(l=>l.correct).length;
+  const pct=Math.round(correct/QUIZ_SIZE*100);
+  const record={id:Date.now(),date:new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),score:correct,total:QUIZ_SIZE,log:sessionLog.slice()};
+  history.unshift(record); if(history.length>20) history.pop();
+  localStorage.setItem('kana_history',JSON.stringify(history));
+  document.getElementById('quiz-box').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  const grade=pct===100?'완벽해요! 🏆':pct>=80?'잘했어요! 🎉':pct>=60?'조금만 더! 💪':'더 연습해봐요 📖';
+  document.getElementById('rs-title').textContent=grade;
+  document.getElementById('rs-score').textContent=`${correct} / ${QUIZ_SIZE}`;
+  document.getElementById('rs-sub').textContent=`정답률 ${pct}%`;
+  renderDetailList('rs-detail',sessionLog);
+  renderHistory();
+}
+
+function renderDetailList(id,log) {
+  document.getElementById(id).innerHTML=log.map(l=>`
+    <div class="detail-item">
+      <span class="di-kana">${l.kana||l.w||''}</span>
+      <span class="di-roma">${l.roma||l.meaning||''}</span>
+      <span>${l.correct?'✅':`❌ (${l.chosen})`}</span>
+    </div>`).join('');
+}
+
+function renderHistory() {
+  const list=document.getElementById('history-list');
+  if(!history.length){list.innerHTML='<p class="history-empty">아직 기록이 없어요</p>';return;}
+  list.innerHTML=history.map((r,i)=>{
+    const pct=Math.round(r.score/r.total*100);
+    const color=pct>=80?'#2ecc71':pct>=60?'#f39c12':'#e74c3c';
+    return `<div class="history-item" onclick="openModal(${i})">
+      <div class="hi-date">${r.date}</div>
+      <div class="hi-score">${r.score}/${r.total} <small style="opacity:.6">(${pct}%)</small></div>
+      <div class="hi-bar-wrap"><div class="hi-bar" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function openModal(i) {
+  const r=history[i]; const pct=Math.round(r.score/r.total*100);
+  document.getElementById('modal-title').textContent='퀴즈 결과';
+  document.getElementById('modal-sub').textContent=r.date;
+  document.getElementById('modal-score').textContent=`${r.score}/${r.total} (${pct}%)`;
+  renderDetailList('modal-detail',r.log);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e) {
+  if(!e||e.target===document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════
+   단계별 학습
+═══════════════════════════════════════════ */
+let completedUnits = new Set(JSON.parse(localStorage.getItem('completed_units')||'[]'));
+let currentUnit = null, lessonStep = 0; // 0=learn,1=practice,2=quiz
+let learnIndex = 0;
+let fcItems=[], fcIndex=0;
+let lqIndex=0, lqAnswered=false, lqScore=0, lqLog=[], lqCurrentItem=null;
+
+function saveProgress() { localStorage.setItem('completed_units',JSON.stringify([...completedUnits])); }
+
+function renderCurriculum() {
+  const total=30, done=completedUnits.size;
+  const pct=Math.round(done/total*100);
+  document.getElementById('op-fill').style.width=pct+'%';
+  document.getElementById('op-text').textContent=`${done} / ${total} 단원 완료 (${pct}%)`;
+
+  const container=document.getElementById('curriculum-list');
+  container.innerHTML='';
+  [1,2,3].forEach(month=>{
+    const info=MONTH_INFO[month];
+    const units=CURRICULUM.filter(u=>u.month===month);
+    const mdone=units.filter(u=>completedUnits.has(u.id)).length;
+    const sec=document.createElement('div'); sec.className='month-section';
+    sec.innerHTML=`
+      <div class="month-header">
+        <span class="month-badge ${info.badge}">${info.label}</span>
+        <span class="month-title">${info.title}</span>
+        <span class="month-prog">${mdone}/${units.length}</span>
+      </div>
+      <p style="font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:10px">${info.desc}</p>
+      <div class="unit-grid" id="unit-grid-${month}"></div>`;
+    container.appendChild(sec);
+    const grid=document.getElementById(`unit-grid-${month}`);
+    units.forEach(u=>{
+      const done=completedUnits.has(u.id);
+      const card=document.createElement('div');
+      card.className='unit-card'+(done?' done':'');
+      card.innerHTML=`
+        <div class="uc-num">Unit ${u.id}</div>
+        <div class="uc-title">${u.title.replace('\n','<br>')}</div>
+        ${done?'<div class="uc-check">✓</div>':''}`;
+      card.onclick=()=>openLesson(u.id);
+      grid.appendChild(card);
+    });
+  });
+}
+
+function openLesson(unitId) {
+  currentUnit = CURRICULUM.find(u=>u.id===unitId);
+  lessonStep = 0; learnIndex = 0;
+  document.getElementById('learn-overview').style.display='none';
+  document.getElementById('lesson-view').style.display='block';
+  document.getElementById('lesson-title').textContent=currentUnit.title.replace('\n',' ');
+  updateStepTabs();
+  renderLearnStep();
+}
+
+function closeLessonView() {
+  document.getElementById('lesson-view').style.display='none';
+  document.getElementById('learn-overview').style.display='block';
+  renderCurriculum();
+}
+
+function updateStepTabs() {
+  ['learn','practice','quiz'].forEach((s,i)=>{
+    const tab=document.getElementById(`tab-${s}`);
+    tab.className='step-tab'+(i===lessonStep?' active':i<lessonStep?' done':'');
+  });
+}
+
+/* ── 배우기 ── */
+function renderLearnStep() {
+  const items = getReviewItems(currentUnit);
+  const item  = items[learnIndex];
+  const isVocab = currentUnit.type==='vocab'||currentUnit.type==='vocab_review';
+  const content = document.getElementById('lesson-content');
+  content.innerHTML=`
+    <div class="learn-card-wrap">
+      <div class="learn-card" id="lc">
+        ${isVocab
+          ? `<div class="lc-word">${item.w}</div>
+             <div class="lc-kr-reading">[ ${item.r} ]</div>
+             <div class="lc-meaning">${item.m}</div>`
+          : `<div class="lc-kana">${item[0]}</div>
+             <div class="lc-reading">${item[1]}</div>`
+        }
+      </div>
+      <div class="card-nav">
+        <button class="card-nav-btn" onclick="moveLearn(-1)" ${learnIndex===0?'disabled':''}>‹</button>
+        <div class="card-dots">${items.map((_,i)=>`<div class="card-dot${i===learnIndex?' active':''}"></div>`).join('')}</div>
+        <button class="card-nav-btn" onclick="moveLearn(1)" ${learnIndex===items.length-1?'disabled':''}>›</button>
+      </div>
+      <p style="text-align:center;font-size:.8rem;color:rgba(255,255,255,.4);margin-top:10px">${learnIndex+1} / ${items.length}</p>
+      ${learnIndex===items.length-1
+        ? `<button class="step-done-btn" onclick="goToStep(1)">연습하기 →</button>`
+        : ''}
+    </div>`;
+}
+
+function moveLearn(dir) {
+  const items = getReviewItems(currentUnit);
+  learnIndex = Math.max(0, Math.min(items.length-1, learnIndex+dir));
+  renderLearnStep();
+}
+
+/* ── 연습 (플래시카드) ── */
+function goToStep(step) {
+  lessonStep = step;
+  updateStepTabs();
+  if (step===1) renderPracticeStep();
+  else if (step===2) renderQuizStep();
+}
+
+function renderPracticeStep() {
+  const allItems = shuffle(getReviewItems(currentUnit));
+  fcItems = allItems.map(it=>({...it||{}, known:false}));
+  fcIndex = 0;
+  renderFC();
+}
+
+function renderFC() {
+  if (fcIndex >= fcItems.length) {
+    const unknowns = fcItems.filter(it=>!it.known);
+    if (unknowns.length === 0) {
+      document.getElementById('lesson-content').innerHTML=`
+        <div style="text-align:center;padding:32px 0">
+          <div style="font-size:3rem;margin-bottom:12px">🎯</div>
+          <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px">연습 완료!</div>
+          <div style="font-size:.85rem;color:rgba(255,255,255,.55);margin-bottom:24px">모두 외웠어요!</div>
+          <button class="step-done-btn" onclick="goToStep(2)">퀴즈 풀기 →</button>
+        </div>`;
+      return;
+    }
+    // 못 외운 것 다시
+    fcItems = shuffle(unknowns.map(it=>({...it,known:false})));
+    fcIndex = 0;
+    renderFC(); return;
+  }
+  const item = fcItems[fcIndex];
+  const isVocab = currentUnit.type==='vocab'||currentUnit.type==='vocab_review';
+  const knownCount = fcItems.filter(it=>it.known).length;
+  document.getElementById('lesson-content').innerHTML=`
+    <div class="flashcard-wrap">
+      <p class="fc-progress-text">외운 것: ${knownCount} / ${fcItems.length}</p>
+      <div class="flashcard" id="fc-card" onclick="flipFC()">
+        <div class="fc-front" style="font-size:${isVocab?'2.2rem':'4rem'}">${isVocab?item.w:item[0]}</div>
+        <div class="fc-hint">클릭해서 뒤집기</div>
+        <div class="fc-back">
+          <div class="fcb-reading">${isVocab?item.r:item[1]}</div>
+          ${isVocab?`<div class="fcb-meaning">${item.m}</div>`:''}
+        </div>
+      </div>
+      <div class="fc-buttons" id="fc-btns" style="display:none">
+        <button class="fc-btn unsure" onclick="fcAnswer(false)">다시 볼게요 ↩</button>
+        <button class="fc-btn know"   onclick="fcAnswer(true)">알았어요 ✓</button>
+      </div>
+    </div>`;
+}
+
+function flipFC() {
+  document.getElementById('fc-card').classList.add('flipped');
+  document.getElementById('fc-btns').style.display='flex';
+}
+
+function fcAnswer(known) {
+  fcItems[fcIndex].known = known;
+  fcIndex++;
+  renderFC();
+}
+
+/* ── 퀴즈 (레슨용, 5문제) ── */
+const LESSON_QUIZ_SIZE = 5;
+
+function renderQuizStep() {
+  lqIndex=0; lqScore=0; lqLog=[]; lqAnswered=false;
+  renderLQ();
+}
+
+function renderLQ() {
+  if (lqIndex >= LESSON_QUIZ_SIZE) { showLessonResult(); return; }
+  lqAnswered = false;
+  const allItems = getReviewItems(currentUnit);
+  const isVocab  = currentUnit.type==='vocab'||currentUnit.type==='vocab_review';
+  lqCurrentItem  = allItems[Math.floor(Math.random()*allItems.length)];
+
+  let options, getLabel;
+  if (isVocab) {
+    const wrong = shuffle(allItems.filter(it=>it.m!==lqCurrentItem.m)).slice(0,3);
+    options = shuffle([lqCurrentItem,...wrong]);
+    getLabel = it => it.m;
+  } else {
+    const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==lqCurrentItem[1])).slice(0,3);
+    options = shuffle([lqCurrentItem,...wrong]);
+    getLabel = it => it[1];
+  }
+
+  const correctLabel = getLabel(lqCurrentItem);
+  document.getElementById('lesson-content').innerHTML=`
+    <div class="quiz-box">
+      <div class="quiz-label">레슨 퀴즈</div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:${lqIndex/LESSON_QUIZ_SIZE*100}%"></div></div>
+        <span class="progress-text">${lqIndex} / ${LESSON_QUIZ_SIZE}</span>
+      </div>
+      <div class="quiz-kana" style="font-size:${isVocab?'2.5rem':'5rem'}">${isVocab?lqCurrentItem.w:lqCurrentItem[0]}</div>
+      <div class="quiz-question">${isVocab?'이 단어의 뜻은?':'이 글자의 발음은?'}</div>
+      <div class="choices" id="lq-choices"></div>
+      <div class="result-msg" id="lq-msg"></div>
+      <button class="action-btn" id="lq-next" onclick="lqNext()">다음 ▶</button>
+    </div>`;
+
+  const box=document.getElementById('lq-choices');
+  options.forEach(opt=>{
+    const btn=document.createElement('button'); btn.className='choice-btn';
+    btn.textContent=getLabel(opt);
+    btn.onclick=()=>checkLQ(getLabel(opt), correctLabel, isVocab);
+    box.appendChild(btn);
+  });
+}
+
+function checkLQ(chosen, correct, isVocab) {
+  if (lqAnswered) return; lqAnswered=true;
+  const ok = chosen===correct;
+  if(ok) lqScore++;
+  lqLog.push({kana:isVocab?lqCurrentItem.w:lqCurrentItem[0], roma:isVocab?lqCurrentItem.m:lqCurrentItem[1], chosen, correct:ok});
+  document.querySelectorAll('#lq-choices .choice-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===correct) b.classList.add('correct');
+    else if(b.textContent===chosen) b.classList.add('wrong');
+  });
+  document.getElementById('lq-msg').textContent = ok?'정답! 🎉':`오답 😢  정답: ${correct}`;
+  lqIndex++;
+  const nb=document.getElementById('lq-next');
+  nb.style.display='inline-block';
+  nb.textContent=lqIndex>=LESSON_QUIZ_SIZE?'결과 보기 ▶':'다음 ▶';
+}
+
+function lqNext() { renderLQ(); }
+
+function showLessonResult() {
+  const pct=Math.round(lqScore/LESSON_QUIZ_SIZE*100);
+  const passed = pct >= 60;
+  if (passed) { completedUnits.add(currentUnit.id); saveProgress(); }
+
+  document.getElementById('lesson-content').innerHTML=`
+    <div class="lesson-complete">
+      <div class="lc-emoji">${pct===100?'🏆':pct>=80?'🎉':pct>=60?'💪':'📖'}</div>
+      <div class="lc-h2">${pct===100?'완벽해요!':pct>=80?'잘했어요!':pct>=60?'통과!':'아쉽네요'}</div>
+      <div class="lc-sub">${lqScore}/${LESSON_QUIZ_SIZE} 정답 (${pct}%)${passed?'<br>✓ 단원 완료로 기록됐어요':''}</div>
+      <div class="detail-list" style="margin-bottom:20px">
+        ${lqLog.map(l=>`<div class="detail-item">
+          <span class="di-kana">${l.kana}</span>
+          <span class="di-roma">${l.roma}</span>
+          <span>${l.correct?'✅':`❌ (${l.chosen})`}</span>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        ${!passed?`<button class="retry-btn" style="background:rgba(255,255,255,0.2);color:white" onclick="renderQuizStep()">다시 풀기 ↩</button>`:''}
+        <button class="retry-btn" onclick="closeLessonView()">목록으로 →</button>
+      </div>
+    </div>`;
+  updateStepTabs();
+}
+
+/* ═══════════════════════════════════════════
+   페이지 전환
+═══════════════════════════════════════════ */
+function showPage(page) {
+  ['chart','katakana','quiz','learn'].forEach(p=>{
+    document.getElementById('page-'+p).style.display = p===page?'block':'none';
+    document.getElementById('btn-'+p).classList.toggle('active', p===page);
+  });
+  if (page==='quiz')  { renderHistory(); startQuiz(); }
+  if (page==='learn') {
+    document.getElementById('learn-overview').style.display='block';
+    document.getElementById('lesson-view').style.display='none';
+    renderCurriculum();
+  }
+}
+
+function buildKatakanaChart() { buildKanaTable('chart-kata', KATAKANA_ROWS); }
+
+buildChart();
+buildKatakanaChart();
+</script>
+</body>
+</html>
