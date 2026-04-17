@@ -213,6 +213,30 @@
 
     /* tooltip */
     .tooltip { position: fixed; background: rgba(0,0,0,0.75); color: white; padding: 6px 14px; border-radius: 8px; font-size: 0.95rem; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 99; }
+
+    /* ── 발음 클릭 피드백 ── */
+    .kana-cell.speaking { background: rgba(79,195,247,0.4) !important; border-color: #4fc3f7 !important; transform: scale(1.12); }
+    .kana-cell .sound-icon { font-size: 0.6rem; color: rgba(255,255,255,0.3); display: block; margin-top: 1px; }
+
+    /* ── 퀴즈 모드 선택 ── */
+    .quiz-mode-wrap { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+    .quiz-mode-btn { padding: 7px 22px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.3); background: transparent; color: rgba(255,255,255,0.55); cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; }
+    .quiz-mode-btn.active { background: white; color: #1a3a6b; border-color: white; }
+
+    /* ── 타이핑 입력 ── */
+    .typing-area { text-align: center; margin-bottom: 16px; }
+    .typing-input { width: 100%; max-width: 240px; padding: 14px 16px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; font-size: 1.4rem; text-align: center; outline: none; letter-spacing: 3px; }
+    .typing-input::placeholder { color: rgba(255,255,255,0.3); font-size: 0.95rem; letter-spacing: 0; }
+    .typing-input:focus { border-color: #4fc3f7; }
+    .typing-input.correct-input { border-color: #2ecc71; background: rgba(39,174,96,0.2); }
+    .typing-input.wrong-input   { border-color: #e74c3c; background: rgba(192,57,43,0.2); }
+    .typing-submit { margin-top: 10px; background: white; color: #1a3a6b; border: none; padding: 11px 32px; border-radius: 24px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: transform 0.15s; }
+    .typing-submit:hover { transform: scale(1.05); }
+
+    /* ── 기록 초기화 버튼 ── */
+    .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .clear-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+    .clear-btn:hover { border-color: #e74c3c; color: #e74c3c; }
   </style>
 </head>
 <body>
@@ -245,6 +269,12 @@
   <div id="page-quiz">
     <div class="quiz-layout">
       <div class="quiz-main">
+        <!-- 모드 선택 -->
+        <div class="quiz-mode-wrap">
+          <button class="quiz-mode-btn active" id="mode-choice" onclick="setQuizMode('choice')">객관식</button>
+          <button class="quiz-mode-btn"        id="mode-typing" onclick="setQuizMode('typing')">타이핑</button>
+        </div>
+
         <div class="quiz-box" id="quiz-box">
           <div class="quiz-label">가나 퀴즈</div>
           <div class="progress-wrap">
@@ -252,8 +282,17 @@
             <span class="progress-text" id="prog-text">0 / 10</span>
           </div>
           <div class="quiz-kana" id="quiz-kana">?</div>
-          <div class="quiz-question">이 글자의 발음은?</div>
+          <div class="quiz-question" id="quiz-question">이 글자의 발음은?</div>
+          <!-- 객관식 -->
           <div class="choices" id="choices"></div>
+          <!-- 타이핑 -->
+          <div class="typing-area" id="typing-area" style="display:none">
+            <input class="typing-input" id="typing-input" type="text" placeholder="로마자로 입력 후 Enter"
+              autocomplete="off" autocorrect="off" spellcheck="false"
+              onkeydown="if(event.key==='Enter')checkTypingAnswer()">
+            <br>
+            <button class="typing-submit" onclick="checkTypingAnswer()">확인 ▶</button>
+          </div>
           <div class="result-msg" id="result-msg"></div>
           <button class="action-btn" id="next-btn" onclick="nextQuestion()">다음 ▶</button>
         </div>
@@ -266,7 +305,10 @@
         </div>
       </div>
       <div class="history-panel">
-        <h3>퀴즈 기록</h3>
+        <div class="history-header">
+          <h3>퀴즈 기록</h3>
+          <button class="clear-btn" onclick="clearHistory()">초기화</button>
+        </div>
         <div class="history-list" id="history-list"><p class="history-empty">아직 기록이 없어요</p></div>
       </div>
     </div>
@@ -509,9 +551,14 @@ function buildKanaTable(containerId, rowData) {
       if (!item) { cell.className = 'kana-cell empty'; }
       else {
         cell.className = 'kana-cell';
-        cell.innerHTML = `<span class="kana">${item[0]}</span><span class="roma">${item[1]}</span>`;
+        cell.innerHTML = `<span class="kana">${item[0]}</span><span class="roma">${item[1]}</span><span class="sound-icon">🔊</span>`;
         cell.addEventListener('mouseenter', e => showTip(e, item[1]));
         cell.addEventListener('mouseleave', hideTip);
+        cell.addEventListener('click', () => {
+          speak(item[0]);
+          cell.classList.add('speaking');
+          setTimeout(() => cell.classList.remove('speaking'), 600);
+        });
       }
       wrap.appendChild(cell);
     });
@@ -525,12 +572,30 @@ function showTip(e, t) {
 }
 function hideTip() { document.getElementById('tooltip').style.opacity=0; }
 
+/* ── 발음 재생 ── */
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 0.85;
+  u.pitch = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
 /* ═══════════════════════════════════════════
    퀴즈
 ═══════════════════════════════════════════ */
 const QUIZ_SIZE = 10;
 let qIndex=0, qAnswered=false, currentKana=null, sessionLog=[];
+let quizMode = 'choice'; // 'choice' | 'typing'
 let history = JSON.parse(localStorage.getItem('kana_history')||'[]');
+
+function setQuizMode(mode) {
+  quizMode = mode;
+  document.getElementById('mode-choice').classList.toggle('active', mode==='choice');
+  document.getElementById('mode-typing').classList.toggle('active', mode==='typing');
+  startQuiz();
+}
 
 function startQuiz() {
   qIndex=0; sessionLog=[];
@@ -548,29 +613,63 @@ function nextQuestion() {
   document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
   currentKana = KANA_LIST[Math.floor(Math.random()*KANA_LIST.length)];
   document.getElementById('quiz-kana').textContent=currentKana[0];
-  const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==currentKana[1])).slice(0,3);
-  const box=document.getElementById('choices'); box.innerHTML='';
-  shuffle([currentKana,...wrong]).forEach(opt=>{
-    const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt[1];
-    btn.onclick=()=>checkAnswer(opt[1]); box.appendChild(btn);
-  });
+
+  if (quizMode === 'choice') {
+    document.getElementById('choices').style.display='grid';
+    document.getElementById('typing-area').style.display='none';
+    const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==currentKana[1])).slice(0,3);
+    const box=document.getElementById('choices'); box.innerHTML='';
+    shuffle([currentKana,...wrong]).forEach(opt=>{
+      const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt[1];
+      btn.onclick=()=>checkAnswer(opt[1]); box.appendChild(btn);
+    });
+  } else {
+    document.getElementById('choices').style.display='none';
+    document.getElementById('typing-area').style.display='block';
+    const inp = document.getElementById('typing-input');
+    inp.value=''; inp.className='typing-input'; inp.disabled=false;
+    inp.querySelector ? null : setTimeout(()=>inp.focus(), 50);
+    setTimeout(()=>inp.focus(), 50);
+  }
 }
 
 function checkAnswer(chosen) {
   if (qAnswered) return; qAnswered=true;
   const ok = chosen===currentKana[1];
   sessionLog.push({kana:currentKana[0],roma:currentKana[1],chosen,correct:ok});
-  document.querySelectorAll('.choice-btn').forEach(b=>{
-    b.disabled=true;
-    if(b.textContent===currentKana[1]) b.classList.add('correct');
-    else if(b.textContent===chosen)    b.classList.add('wrong');
-  });
+
+  if (quizMode === 'choice') {
+    document.querySelectorAll('.choice-btn').forEach(b=>{
+      b.disabled=true;
+      if(b.textContent===currentKana[1]) b.classList.add('correct');
+      else if(b.textContent===chosen)    b.classList.add('wrong');
+    });
+  } else {
+    const inp = document.getElementById('typing-input');
+    if(inp){ inp.disabled=true; inp.classList.add(ok?'correct-input':'wrong-input'); }
+  }
+
   document.getElementById('result-msg').textContent = ok ? '정답! 🎉' : `오답 😢  정답: ${currentKana[1]}`;
   qIndex++;
   document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
   document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
   const nb=document.getElementById('next-btn');
   nb.style.display='inline-block'; nb.textContent=qIndex>=QUIZ_SIZE?'결과 보기 ▶':'다음 ▶';
+}
+
+function checkTypingAnswer() {
+  if (qAnswered) return;
+  const inp = document.getElementById('typing-input');
+  const typed = inp.value.trim().toLowerCase();
+  if (!typed) return;
+  checkAnswer(typed);
+}
+
+function clearHistory() {
+  if (!confirm('퀴즈 기록을 모두 삭제할까요?')) return;
+  history = [];
+  localStorage.removeItem('kana_history');
+  renderHistory();
 }
 
 function showSessionResult() {
