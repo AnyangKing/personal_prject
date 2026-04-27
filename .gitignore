@@ -37,3 +37,6 @@ Documents/
 # 기타 로그 및 데이터
 *.log
 wandb/
+
+# API KEY
+*.env
