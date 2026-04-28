@@ -36,6 +36,7 @@ Documents/
 
 # 기타 로그 및 데이터
 *.log
+*.pdf
 wandb/
 
 # API KEY
