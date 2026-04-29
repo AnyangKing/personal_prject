@@ -29,7 +29,6 @@
     .chart-block h3{font-size:.9rem;color:rgba(255,255,255,.6);margin-bottom:10px;letter-spacing:1px}
     .chart-table{display:grid;grid-template-columns:52px repeat(5,1fr);gap:5px;max-width:520px}
     .chart-table.yoon-table{grid-template-columns:72px repeat(3,1fr);max-width:380px}
-    .ct-corner{}
     .ct-col-hdr{text-align:center;padding:4px;font-size:.75rem;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px}
     .ct-row-lbl{display:flex;align-items:center;justify-content:flex-end;padding-right:7px;font-size:.7rem;font-weight:600;color:rgba(255,255,255,.4)}
     .kana-cell{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:8px 3px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
@@ -764,7 +763,6 @@ function nextQuestion(){
   document.getElementById('prog-text').textContent=qIndex+' / '+QUIZ_SIZE;
   currentKana=getNextKana();
   document.getElementById('quiz-kana').textContent=currentKana[0];
-  speak(currentKana[0]);
 
   if(quizMode==='typing'){
     document.getElementById('choices').style.display='none';
