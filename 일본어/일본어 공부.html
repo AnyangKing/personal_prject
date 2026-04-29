@@ -105,6 +105,7 @@
     .month-badge.m1 { background: rgba(79,195,247,0.25); }
     .month-badge.m2 { background: rgba(129,199,132,0.25); }
     .month-badge.m3 { background: rgba(255,183,77,0.25); }
+    .month-badge.m4 { background: rgba(206,147,216,0.25); }
     .month-title { font-size: 1rem; font-weight: 700; }
     .month-prog { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-left: auto; }
 
@@ -218,6 +219,17 @@
     .kana-cell.speaking { background: rgba(79,195,247,0.4) !important; border-color: #4fc3f7 !important; transform: scale(1.12); }
     .kana-cell .sound-icon { font-size: 0.6rem; color: rgba(255,255,255,0.3); display: block; margin-top: 1px; }
 
+    /* ── 탁음/요음 표 블록 ── */
+    .chart-block { margin-bottom: 28px; }
+    .chart-block h3 { font-size: 0.82rem; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 1px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .chart-table.yoon-table { grid-template-columns: 58px repeat(3, 1fr); max-width: 360px; }
+    /* 탁음 셀 — 주황빛 */
+    .kana-cell.dakuten { background: rgba(255,183,77,0.1); border-color: rgba(255,183,77,0.3); }
+    .kana-cell.dakuten:hover { background: rgba(255,183,77,0.25); }
+    /* 요음 셀 — 초록빛 */
+    .kana-cell.yoon { background: rgba(129,199,132,0.1); border-color: rgba(129,199,132,0.3); }
+    .kana-cell.yoon:hover { background: rgba(129,199,132,0.25); }
+
     /* ── 퀴즈 모드 선택 ── */
     .quiz-mode-wrap { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
     .quiz-mode-btn { padding: 7px 22px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.3); background: transparent; color: rgba(255,255,255,0.55); cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; }
@@ -256,13 +268,35 @@
   <!-- ══ 히라가나 표 ══ -->
   <div id="page-chart">
     <p class="section-title">글자를 클릭하면 발음을 확인할 수 있어요</p>
-    <div class="chart-grid" id="chart"></div>
+    <div class="chart-block">
+      <h3>기본 히라가나 (청음) — 46자</h3>
+      <div id="chart"></div>
+    </div>
+    <div class="chart-block">
+      <h3>탁음 (゛) · 반탁음 (゜) — 25자</h3>
+      <div id="chart-daku"></div>
+    </div>
+    <div class="chart-block">
+      <h3>요음 (拗音) — 작은 や·ゆ·よ 조합 33자</h3>
+      <div id="chart-yoon" class="yoon-table"></div>
+    </div>
   </div>
 
   <!-- ══ 가타카나 표 ══ -->
   <div id="page-katakana">
     <p class="section-title">히라가나와 발음이 같고 모양만 달라요 — 주로 외래어에 사용</p>
-    <div class="chart-grid" id="chart-kata"></div>
+    <div class="chart-block">
+      <h3>기본 가타카나 (청음) — 46자</h3>
+      <div id="chart-kata"></div>
+    </div>
+    <div class="chart-block">
+      <h3>탁음 (゛) · 반탁음 (゜) — 25자</h3>
+      <div id="chart-kata-daku"></div>
+    </div>
+    <div class="chart-block">
+      <h3>요음 (拗音) — 33자</h3>
+      <div id="chart-kata-yoon" class="yoon-table"></div>
+    </div>
   </div>
 
   <!-- ══ 퀴즈 ══ -->
@@ -390,6 +424,47 @@ const HIRAGANA = [
 ];
 const KANA_LIST = HIRAGANA.filter(Boolean);
 
+const DAKUTEN_HIRA = [
+  { label:'が행', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go']] },
+  { label:'ざ행', items:[['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo']] },
+  { label:'だ행', items:[['だ','da'],['ぢ','ji'],['づ','zu'],['で','de'],['ど','do']] },
+  { label:'ば행', items:[['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']] },
+  { label:'ぱ행', items:[['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']] },
+];
+const DAKUTEN_KATA = [
+  { label:'ガ행', items:[['ガ','ga'],['ギ','gi'],['グ','gu'],['ゲ','ge'],['ゴ','go']] },
+  { label:'ザ행', items:[['ザ','za'],['ジ','ji'],['ズ','zu'],['ゼ','ze'],['ゾ','zo']] },
+  { label:'ダ행', items:[['ダ','da'],['ヂ','ji'],['ヅ','zu'],['デ','de'],['ド','do']] },
+  { label:'バ행', items:[['バ','ba'],['ビ','bi'],['ブ','bu'],['ベ','be'],['ボ','bo']] },
+  { label:'パ행', items:[['パ','pa'],['ピ','pi'],['プ','pu'],['ペ','pe'],['ポ','po']] },
+];
+const YOON_HIRA = [
+  { label:'きゃ行', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo']] },
+  { label:'しゃ行', items:[['しゃ','sha'],['しゅ','shu'],['しょ','sho']] },
+  { label:'ちゃ行', items:[['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho']] },
+  { label:'にゃ行', items:[['にゃ','nya'],['にゅ','nyu'],['にょ','nyo']] },
+  { label:'ひゃ行', items:[['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo']] },
+  { label:'みゃ行', items:[['みゃ','mya'],['みゅ','myu'],['みょ','myo']] },
+  { label:'りゃ行', items:[['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']] },
+  { label:'ぎゃ行', items:[['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo']] },
+  { label:'じゃ行', items:[['じゃ','ja'], ['じゅ','ju'], ['じょ','jo']]  },
+  { label:'びゃ行', items:[['びゃ','bya'],['びゅ','byu'],['びょ','byo']] },
+  { label:'ぴゃ行', items:[['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']] },
+];
+const YOON_KATA = [
+  { label:'キャ行', items:[['キャ','kya'],['キュ','kyu'],['キョ','kyo']] },
+  { label:'シャ行', items:[['シャ','sha'],['シュ','shu'],['ショ','sho']] },
+  { label:'チャ行', items:[['チャ','cha'],['チュ','chu'],['チョ','cho']] },
+  { label:'ニャ行', items:[['ニャ','nya'],['ニュ','nyu'],['ニョ','nyo']] },
+  { label:'ヒャ行', items:[['ヒャ','hya'],['ヒュ','hyu'],['ヒョ','hyo']] },
+  { label:'ミャ行', items:[['ミャ','mya'],['ミュ','myu'],['ミョ','myo']] },
+  { label:'リャ行', items:[['リャ','rya'],['リュ','ryu'],['リョ','ryo']] },
+  { label:'ギャ行', items:[['ギャ','gya'],['ギュ','gyu'],['ギョ','gyo']] },
+  { label:'ジャ行', items:[['ジャ','ja'], ['ジュ','ju'], ['ジョ','jo']]  },
+  { label:'ビャ行', items:[['ビャ','bya'],['ビュ','byu'],['ビョ','byo']] },
+  { label:'ピャ行', items:[['ピャ','pya'],['ピュ','pyu'],['ピョ','pyo']] },
+];
+
 const CURRICULUM = [
   // ── 1단계: 히라가나 (4주) ──
   {id:1, month:1, title:'あ행', type:'kana', items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']]},
@@ -480,12 +555,21 @@ const CURRICULUM = [
     {w:'もう一度',r:'모이치도',m:'한 번 더'},
   ]},
   {id:30, month:3, title:'최종\n복습', type:'vocab_review', items:null},
+
+  // ── 4단계: 탁음·반탁음·요음 ──
+  {id:31, month:4, title:'が행·ざ행\n탁음①', type:'kana', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go'],['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo']]},
+  {id:32, month:4, title:'だ행·ば행\n탁음②', type:'kana', items:[['だ','da'],['で','de'],['ど','do'],['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']]},
+  {id:33, month:4, title:'ぱ행\n반탁음',  type:'kana', items:[['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']]},
+  {id:34, month:4, title:'탁음·반탁음\n총복습', type:'daku_review', items:null},
+  {id:35, month:4, title:'きゃ~りゃ\n요음①', type:'kana', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],['しゃ','sha'],['しゅ','shu'],['しょ','sho'],['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],['ひゃ','hya'],['みゃ','mya'],['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']]},
+  {id:36, month:4, title:'ぎゃ~ぴゃ\n요음②', type:'kana', items:[['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo'],['じゃ','ja'],['じゅ','ju'],['じょ','jo'],['びゃ','bya'],['びゅ','byu'],['びょ','byo'],['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']]},
 ];
 
 const MONTH_INFO = {
   1: { label:'1단계', title:'히라가나 마스터', badge:'m1', desc:'일본어의 기초! 히라가나 46자를 정복해요.' },
   2: { label:'2단계', title:'가타카나 마스터', badge:'m2', desc:'외래어 표기에 쓰는 가타카나를 배워요.' },
   3: { label:'3단계', title:'기초 단어·문장', badge:'m3', desc:'일상에서 쓰는 단어와 표현을 익혀요.' },
+  4: { label:'4단계', title:'탁음·반탁음·요음', badge:'m4', desc:'탁음(が·ざ·だ·ば)과 요음(きゃ 등)으로 완성도를 높여요.' },
 };
 
 /* ═══════════════════════════════════════════
@@ -500,6 +584,9 @@ function getReviewItems(unit) {
   }
   if (unit.type === 'vocab_review') {
     return CURRICULUM.filter(u => u.month === 3 && u.type === 'vocab').flatMap(u => u.items);
+  }
+  if (unit.type === 'daku_review') {
+    return CURRICULUM.filter(u => u.month === 4 && u.type === 'kana').flatMap(u => u.items);
   }
   return unit.items;
 }
@@ -535,12 +622,14 @@ const KATAKANA_ROWS = [
   { label:'ン',   items:[['ン','n'],null,null,null,null] },
 ];
 
-function buildKanaTable(containerId, rowData) {
+function buildKanaTable(containerId, rowData, extraClass) {
   const wrap = document.getElementById(containerId);
-  wrap.className = 'chart-table';
+  if (!wrap) return;
+  const isYoon = rowData[0].items.length === 3;
+  wrap.className = 'chart-table' + (isYoon ? ' yoon-table' : '');
   // 헤더행
   const corner = document.createElement('div'); corner.className = 'ct-corner'; wrap.appendChild(corner);
-  ['a','i','u','e','o'].forEach(v => {
+  (isYoon ? ['ya','yu','yo'] : ['a','i','u','e','o']).forEach(v => {
     const h = document.createElement('div'); h.className = 'ct-col-hdr'; h.textContent = v; wrap.appendChild(h);
   });
   // 데이터행
@@ -550,7 +639,7 @@ function buildKanaTable(containerId, rowData) {
       const cell = document.createElement('div');
       if (!item) { cell.className = 'kana-cell empty'; }
       else {
-        cell.className = 'kana-cell';
+        cell.className = 'kana-cell' + (extraClass ? ' ' + extraClass : '');
         cell.innerHTML = `<span class="kana">${item[0]}</span><span class="roma">${item[1]}</span><span class="sound-icon">🔊</span>`;
         cell.addEventListener('mouseenter', e => showTip(e, item[1]));
         cell.addEventListener('mouseleave', hideTip);
@@ -565,7 +654,6 @@ function buildKanaTable(containerId, rowData) {
   });
 }
 
-function buildChart() { buildKanaTable('chart', HIRAGANA_ROWS); }
 function showTip(e, t) {
   const el = document.getElementById('tooltip');
   el.textContent = t; el.style.left=(e.clientX+12)+'px'; el.style.top=(e.clientY-32)+'px'; el.style.opacity=1;
@@ -735,14 +823,15 @@ let lqIndex=0, lqAnswered=false, lqScore=0, lqLog=[], lqCurrentItem=null;
 function saveProgress() { localStorage.setItem('completed_units',JSON.stringify([...completedUnits])); }
 
 function renderCurriculum() {
-  const total=30, done=completedUnits.size;
+  const total=36, done=completedUnits.size;
   const pct=Math.round(done/total*100);
   document.getElementById('op-fill').style.width=pct+'%';
   document.getElementById('op-text').textContent=`${done} / ${total} 단원 완료 (${pct}%)`;
 
+
   const container=document.getElementById('curriculum-list');
   container.innerHTML='';
-  [1,2,3].forEach(month=>{
+  [1,2,3,4].forEach(month=>{
     const info=MONTH_INFO[month];
     const units=CURRICULUM.filter(u=>u.month===month);
     const mdone=units.filter(u=>completedUnits.has(u.id)).length;
@@ -1004,10 +1093,12 @@ function showPage(page) {
   }
 }
 
-function buildKatakanaChart() { buildKanaTable('chart-kata', KATAKANA_ROWS); }
-
-buildChart();
-buildKatakanaChart();
+buildKanaTable('chart',          HIRAGANA_ROWS);
+buildKanaTable('chart-daku',     DAKUTEN_HIRA, 'dakuten');
+buildKanaTable('chart-yoon',     YOON_HIRA,   'yoon');
+buildKanaTable('chart-kata',     KATAKANA_ROWS);
+buildKanaTable('chart-kata-daku',DAKUTEN_KATA, 'dakuten');
+buildKanaTable('chart-kata-yoon',YOON_KATA,   'yoon');
 </script>
 </body>
 </html>
