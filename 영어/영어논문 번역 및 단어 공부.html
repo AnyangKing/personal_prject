@@ -104,6 +104,19 @@ body {
   border-left: 3px solid var(--blue);
   font-size: 14px; line-height: 1.9; word-break: keep-all;
 }
+.sentence-card {
+  margin-bottom: 12px; padding: 12px 14px;
+  background: var(--surface0); border-radius: 8px;
+  border-left: 3px solid var(--blue);
+}
+.sentence-original {
+  color: var(--subtext0); font-size: 12px; line-height: 1.65;
+  border-bottom: 1px solid var(--surface1); padding-bottom: 8px; margin-bottom: 8px;
+}
+.sentence-translated {
+  color: var(--text); font-size: 14px; line-height: 1.85; word-break: keep-all;
+}
+.sentence-error { color: var(--red); font-style: italic; }
 .trans-loading {
   color: var(--overlay0); font-style: italic; padding: 20px 0;
   display: flex; align-items: center; gap: 10px;
@@ -228,6 +241,7 @@ body {
   transition: background .1s; cursor: default;
 }
 .word-row:hover { background: var(--surface0); }
+.word-row.selected { background: rgba(137,180,250,.16); }
 .word-row.known-row { opacity: .4; }
 .word-row.known-row:hover { opacity: .75; background: var(--surface0); }
 
@@ -266,6 +280,43 @@ body {
 .wr-know-btn.known:hover { color: var(--red); }
 
 .wr-loading .wr-korean { color: var(--overlay0); animation: pulse 1.5s infinite; }
+
+/* Word detail */
+#word-detail {
+  border-top: 1px solid var(--surface0);
+  background: var(--crust);
+  padding: 12px;
+  min-height: 180px;
+  max-height: 36%;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.word-detail-empty {
+  color: var(--overlay0); font-size: 12px; line-height: 1.6;
+  height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.detail-word {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+}
+.detail-word strong { font-size: 18px; color: var(--blue); }
+.detail-word span { font-size: 11px; color: var(--subtext0); }
+.detail-korean { color: var(--teal); font-size: 13px; margin-bottom: 8px; }
+.detail-definition {
+  color: var(--text); font-size: 12px; line-height: 1.55;
+  padding: 8px; background: var(--surface0); border-radius: 6px; margin-bottom: 10px;
+}
+.detail-meta {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.detail-chip {
+  background: var(--surface0); color: var(--subtext0);
+  border-radius: 999px; padding: 2px 8px; font-size: 10px;
+}
+.detail-example-title {
+  color: var(--overlay0); font-size: 10px; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 5px;
+}
+.detail-example { color: var(--subtext0); font-size: 12px; line-height: 1.55; }
 
 /* ── Spinner ── */
 .spinner {
@@ -352,6 +403,9 @@ body {
         논문을 업로드하면<br>중요 단어가 여기에 표시됩니다
       </div>
     </div>
+    <div id="word-detail">
+      <div class="word-detail-empty">단어를 클릭하면 뜻, 예문, 출현 정보를 볼 수 있습니다</div>
+    </div>
   </div>
 
   <!-- Sidebar resize handle -->
@@ -401,9 +455,11 @@ const state = {
   totalPages: 0,
   pageTexts: {},
   pageTranslations: {},
+  paperText: '',
   paperTitle: '',
   paperId: null,
   currentPaperWords: [],   // word list for current paper
+  selectedWord: null,
   vocabCollapsed: false,
   vocabFilter: 'all',
   viewMode: 'split',
@@ -465,9 +521,11 @@ async function loadPDF(file) {
     state.currentPage  = 1;
     state.pageTexts    = {};
     state.pageTranslations = {};
+    state.paperText    = '';
     state.paperTitle   = file.name.replace(/\.pdf$/i, '');
     state.paperId      = generateId(state.paperTitle);
     state.currentPaperWords = [];
+    state.selectedWord = null;
 
     if (!allPapers[state.paperId]) {
       allPapers[state.paperId] = {
@@ -490,7 +548,10 @@ async function loadPDF(file) {
 
     // Background: extract all text → vocabulary
     showToast('📚 전체 텍스트 추출 중...');
-    extractAllText().then(processVocabulary);
+    extractAllText().then(fullText => {
+      state.paperText = fullText;
+      return processVocabulary(fullText);
+    });
   } catch (e) {
     showToast('❌ PDF 로딩 실패: ' + e.message);
   }
@@ -539,6 +600,7 @@ async function extractPageText(pageNum) {
   let text = '', lastY = null;
   for (const item of content.items) {
     if (lastY !== null && Math.abs(item.transform[5] - lastY) > 4) text += '\n';
+    if (text && !text.endsWith('\n') && item.str && !/^\s|[.,;:!?)]/.test(item.str)) text += ' ';
     text += item.str;
     lastY = item.transform[5];
   }
@@ -572,25 +634,29 @@ async function translatePage(pageNum, text) {
     return;
   }
 
-  const chunks     = splitChunks(clean, 380);
+  const chunks = splitChunks(clean, 380);
   const translated = [];
 
   for (const chunk of chunks) {
     try {
       const t = await callTranslate(chunk);
-      translated.push(t);
+      translated.push({ source: chunk, translation: t, error: false });
     } catch {
-      translated.push('<em style="color:var(--red)">[번역 실패 — API 하루 한도 초과 또는 네트워크 오류]</em>');
+      translated.push({
+        source: chunk,
+        translation: '[번역 실패 - API 하루 한도 초과 또는 네트워크 오류]',
+        error: true
+      });
     }
-    renderTranslation(translated.join('\n'));
+    renderTranslation(translated);
     await sleep(350);
   }
 
-  state.pageTranslations[pageNum] = translated.join('\n');
+  state.pageTranslations[pageNum] = translated;
 }
 
 function splitChunks(text, maxLen) {
-  const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+  const sentences = splitSentences(text);
   const chunks = [];
   let cur = '';
   for (const s of sentences) {
@@ -610,10 +676,21 @@ async function callTranslate(text) {
 }
 
 function renderTranslation(text) {
-  const el   = document.getElementById('translation-content');
-  const paras = text.split('\n').filter(p => p.trim());
+  const el = document.getElementById('translation-content');
+
+  if (Array.isArray(text)) {
+    el.innerHTML = text.map(pair => `
+      <div class="sentence-card">
+        <div class="sentence-original">${esc(pair.source)}</div>
+        <div class="sentence-translated ${pair.error ? 'sentence-error' : ''}">${esc(pair.translation)}</div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  const paras = String(text).split('\n').filter(p => p.trim());
   el.innerHTML = paras.map(p =>
-    `<div class="trans-paragraph">${p.trim()}</div>`
+    `<div class="trans-paragraph">${esc(p.trim())}</div>`
   ).join('');
 }
 
@@ -745,6 +822,7 @@ function renderVocabulary() {
       repeated ? 'repeated-row' : 'new-row',
       isKnown  ? 'known-row'    : '',
       loading  ? 'wr-loading'   : '',
+      state.selectedWord === word ? 'selected' : '',
     ].join(' ');
 
     const indicatorClass = isKnown ? 'known' : repeated ? 'repeated' : 'new';
@@ -755,7 +833,7 @@ function renderVocabulary() {
       repeated ? `📌 ${paperList}` : ''
     ].filter(Boolean).join('  ');
 
-    return `<div class="${rowClass}" title="${esc(tooltip)}">
+    return `<div class="${rowClass}" title="${esc(tooltip)}" onclick="selectWord('${word}')">
       <span class="wr-indicator ${indicatorClass}"></span>
       <span class="wr-word">${esc(word)}</span>
       <span class="wr-korean">${esc(info.korean || (loading ? '...' : '—'))}</span>
@@ -765,6 +843,62 @@ function renderVocabulary() {
       </button>
     </div>`;
   }).join('');
+
+  renderWordDetail();
+}
+
+function selectWord(word) {
+  state.selectedWord = word;
+  renderVocabulary();
+}
+
+function renderWordDetail() {
+  const detail = document.getElementById('word-detail');
+  if (!detail) return;
+
+  const word = state.selectedWord;
+  const info = word ? allVocabulary[word] : null;
+  if (!word || !info) {
+    detail.innerHTML = '<div class="word-detail-empty">단어를 클릭하면 뜻, 예문, 출현 정보를 볼 수 있습니다</div>';
+    return;
+  }
+
+  const paperList = info.papers
+    .map(id => allPapers[id]?.title || id.split('_')[0])
+    .join(', ');
+  const example = findExampleSentence(word);
+  const knownLabel = knownWords.has(word) ? '알고 있음' : '학습 중';
+
+  detail.innerHTML = `
+    <div class="detail-word">
+      <strong>${esc(word)}</strong>
+      <span>${esc(info.pos || '품사 정보 없음')}</span>
+    </div>
+    <div class="detail-korean">${esc(info.korean || '한국어 뜻 조회 중...')}</div>
+    <div class="detail-definition">${esc(info.definition || '영어 정의를 아직 가져오지 못했습니다.')}</div>
+    <div class="detail-meta">
+      <span class="detail-chip">빈도 ${info.totalCount || 0}</span>
+      <span class="detail-chip">${esc(knownLabel)}</span>
+      <span class="detail-chip">논문 ${info.papers.length}개</span>
+    </div>
+    <div class="detail-example-title">Example in paper</div>
+    <div class="detail-example">${esc(example || '현재 추출된 문장 안에서는 예문을 찾지 못했습니다.')}</div>
+    <div class="detail-example-title" style="margin-top:10px">Papers</div>
+    <div class="detail-example">${esc(paperList)}</div>
+  `;
+}
+
+function findExampleSentence(word) {
+  const source = state.paperText || Object.values(state.pageTexts).join('\n');
+  if (!source) return '';
+  const re = new RegExp(`\\b${word}\\b`, 'i');
+  return splitSentences(source)
+    .map(s => s.replace(/\s+/g, ' ').trim())
+    .find(s => re.test(s)) || '';
+}
+
+function splitSentences(text) {
+  return text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
 }
 
 // ──────────────────────────────────────────────
