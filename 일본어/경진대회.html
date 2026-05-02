@@ -650,7 +650,6 @@ function buildKanaTable(containerId, rowData, extraClass=''){
           speak(item[0]);
           cell.classList.add('speaking');
           setTimeout(()=>cell.classList.remove('speaking'),600);
-          checkStreak(); addXP(1);
         });
       }
       wrap.appendChild(cell);
@@ -1168,7 +1167,7 @@ function showPage(page){
     const btn=document.getElementById('btn-'+p);
     if(btn) btn.classList.toggle('active',p===page);
   });
-  if(page==='quiz'){renderHistory();startQuiz();}
+  if(page==='quiz'){renderHistory(); if(qIndex===0&&sessionLog.length===0) startQuiz();}
   if(page==='learn'){
     document.getElementById('learn-overview').style.display='block';
     document.getElementById('lesson-view').style.display='none';
