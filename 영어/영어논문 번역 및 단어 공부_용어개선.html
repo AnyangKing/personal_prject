@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperVocab — 논문 단어장</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --base:     #1e1e2e;
+  --mantle:   #181825;
+  --crust:    #11111b;
+  --surface0: #313244;
+  --surface1: #45475a;
+  --surface2: #585b70;
+  --overlay0: #6c7086;
+  --text:     #cdd6f4;
+  --subtext0: #a6adc8;
+  --blue:     #89b4fa;
+  --green:    #a6e3a1;
+  --yellow:   #f9e2af;
+  --red:      #f38ba8;
+  --mauve:    #cba6f7;
+  --teal:     #94e2d5;
+  --peach:    #fab387;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--base);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Noto Sans KR', system-ui, sans-serif;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+#header {
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface1);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  height: 48px;
+}
+#logo { font-size: 15px; font-weight: 700; color: var(--blue); white-space: nowrap; }
+#upload-btn {
+  background: var(--blue); color: var(--base);
+  border: none; border-radius: 6px;
+  padding: 6px 14px; font-weight: 600; cursor: pointer; font-size: 13px;
+  white-space: nowrap; transition: opacity .2s;
+}
+#upload-btn:hover { opacity: .82; }
+#paper-title {
+  color: var(--subtext0); font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+}
+#view-toggle-group {
+  display: flex; gap: 4px; flex-shrink: 0;
+}
+.vbtn {
+  background: var(--surface0); border: 1px solid var(--surface1);
+  color: var(--subtext0); border-radius: 5px;
+  padding: 4px 10px; font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.vbtn.active { background: var(--blue); color: var(--base); border-color: var(--blue); font-weight: 600; }
+#page-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.page-btn {
+  background: var(--surface0); border: none; color: var(--text);
+  border-radius: 4px; width: 28px; height: 28px;
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; transition: background .15s;
+}
+.page-btn:hover { background: var(--surface1); }
+.page-btn:disabled { opacity: .3; cursor: not-allowed; }
+#page-info { color: var(--subtext0); font-size: 13px; min-width: 56px; text-align: center; }
+
+/* ── Main Split ── */
+#main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.panel { flex: 1; overflow: auto; position: relative; min-width: 0; }
+
+/* Left — PDF */
+#left-panel {
+  border-right: 1px solid var(--surface1);
+  background: var(--crust);
+  display: flex; flex-direction: column;
+  align-items: center; padding: 16px; gap: 8px;
+}
+#pdf-canvas { box-shadow: 0 4px 24px rgba(0,0,0,.45); max-width: 100%; display: block; }
+
+/* Right — Translation */
+#right-panel { background: var(--base); padding: 24px 28px; }
+#right-panel h3 {
+  font-size: 11px; color: var(--overlay0); margin-bottom: 16px;
+  letter-spacing: .8px; text-transform: uppercase;
+  border-bottom: 1px solid var(--surface0); padding-bottom: 8px;
+}
+.trans-paragraph {
+  margin-bottom: 14px; padding: 12px 14px;
+  background: var(--surface0); border-radius: 8px;
+  border-left: 3px solid var(--blue);
+  font-size: 14px; line-height: 1.9; word-break: keep-all;
+}
+.sentence-card {
+  margin-bottom: 12px; padding: 12px 14px;
+  background: var(--surface0); border-radius: 8px;
+  border-left: 3px solid var(--blue);
+}
+.sentence-original {
+  color: var(--subtext0); font-size: 12px; line-height: 1.65;
+  border-bottom: 1px solid var(--surface1); padding-bottom: 8px; margin-bottom: 8px;
+}
+.sentence-translated {
+  color: var(--text); font-size: 14px; line-height: 1.85; word-break: keep-all;
+}
+.sentence-error { color: var(--red); font-style: italic; }
+.trans-loading {
+  color: var(--overlay0); font-style: italic; padding: 20px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.api-warning {
+  background: rgba(249,226,175,.1); border: 1px solid var(--yellow);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+  font-size: 12px; color: var(--yellow); line-height: 1.6;
+}
+
+/* Divider */
+#divider {
+  width: 5px; background: var(--surface0);
+  cursor: col-resize; flex-shrink: 0; transition: background .2s;
+}
+#divider:hover, #divider.dragging { background: var(--blue); }
+
+/* Empty states */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 12px; color: var(--overlay0);
+}
+.empty-state .icon { font-size: 52px; }
+.empty-state p { font-size: 14px; }
+
+/* Drag-and-drop overlay */
+#drag-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(137,180,250,.08);
+  border: 3px dashed var(--blue);
+  pointer-events: none;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+}
+#drag-overlay.active { display: flex; }
+#drag-overlay .drag-icon { font-size: 64px; }
+#drag-overlay .drag-text { font-size: 20px; font-weight: 700; color: var(--blue); }
+#drag-overlay .drag-sub  { font-size: 13px; color: var(--subtext0); }
+
+/* ── Vocabulary Sidebar ── */
+#vocab-section {
+  background: var(--mantle);
+  border-right: 1px solid var(--surface1);
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  width: 260px;
+  transition: width .25s ease;
+  overflow: hidden;
+  min-height: 0;
+}
+#vocab-section.collapsed { width: 0; }
+
+#vocab-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px; height: 38px; flex-shrink: 0;
+  border-bottom: 1px solid var(--surface0);
+}
+#vocab-title { font-weight: 600; font-size: 13px; flex: 1; white-space: nowrap; }
+#vocab-count {
+  background: var(--surface0); color: var(--subtext0);
+  border-radius: 10px; padding: 1px 7px; font-size: 10px; white-space: nowrap;
+}
+#vocab-toggle {
+  background: none; border: none; color: var(--subtext0);
+  cursor: pointer; font-size: 13px; padding: 2px 4px;
+  border-radius: 4px; transition: color .15s, background .15s; flex-shrink: 0;
+}
+#vocab-toggle:hover { color: var(--text); background: var(--surface0); }
+
+#vocab-search-row {
+  padding: 6px 10px; flex-shrink: 0;
+  border-bottom: 1px solid var(--surface0);
+}
+#vocab-search {
+  width: 100%; background: var(--surface0); border: 1px solid var(--surface1);
+  color: var(--text); border-radius: 5px;
+  padding: 4px 8px; font-size: 12px; outline: none;
+}
+#vocab-search:focus { border-color: var(--blue); }
+
+#vocab-filter-btns {
+  display: flex; gap: 3px; padding: 5px 10px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--surface0); flex-shrink: 0;
+}
+.fbtn {
+  background: var(--surface0); border: 1px solid transparent;
+  color: var(--subtext0); border-radius: 4px;
+  padding: 2px 7px; font-size: 10px; cursor: pointer; transition: all .15s;
+}
+.fbtn.active { background: var(--mauve); color: var(--base); font-weight: 600; }
+.fbtn:hover:not(.active) { background: var(--surface1); color: var(--text); }
+
+#vocab-col-header {
+  display: flex; align-items: center;
+  padding: 0 10px; height: 22px; flex-shrink: 0;
+  border-bottom: 1px solid var(--surface0);
+  font-size: 10px; color: var(--overlay0); letter-spacing: .4px; text-transform: uppercase;
+  user-select: none;
+}
+#vocab-content {
+  overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column;
+  flex: 1;
+}
+#vocab-content::-webkit-scrollbar { width: 4px; }
+#vocab-content::-webkit-scrollbar-track { background: transparent; }
+#vocab-content::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 2px; }
+
+/* Sidebar divider */
+#sidebar-divider {
+  width: 4px; background: var(--surface0);
+  cursor: col-resize; flex-shrink: 0; transition: background .2s;
+}
+#sidebar-divider:hover, #sidebar-divider.dragging { background: var(--blue); }
+
+/* ── Word Row (사이드바 스타일) ── */
+.word-row {
+  display: flex; align-items: center;
+  padding: 0 10px; height: 28px; flex-shrink: 0;
+  transition: background .1s; cursor: default;
+}
+.word-row:hover { background: var(--surface0); }
+.word-row.selected { background: rgba(137,180,250,.16); }
+.word-row.known-row { opacity: .4; }
+.word-row.known-row:hover { opacity: .75; background: var(--surface0); }
+
+.wr-indicator {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-right: 8px;
+}
+.wr-indicator.new      { background: var(--blue); }
+.wr-indicator.repeated { background: var(--yellow); }
+.wr-indicator.known    { background: var(--surface2); }
+
+.wr-word {
+  font-size: 12px; font-weight: 600; color: var(--text);
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.word-row.repeated-row .wr-word { color: var(--yellow); }
+.word-row.known-row    .wr-word { color: var(--overlay0); }
+
+.wr-korean {
+  font-size: 11px; color: var(--teal);
+  width: 68px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-left: 4px;
+}
+.wr-freq {
+  font-size: 10px; color: var(--overlay0);
+  width: 28px; flex-shrink: 0; text-align: right; margin-left: 4px;
+}
+.wr-know-btn {
+  flex-shrink: 0; background: transparent; border: none;
+  color: var(--overlay0); border-radius: 3px; width: 16px;
+  padding: 0; font-size: 12px; cursor: pointer; line-height: 1;
+  transition: color .15s; opacity: 0; margin-left: 2px;
+}
+.word-row:hover .wr-know-btn { opacity: 1; }
+.wr-know-btn:hover { color: var(--green); }
+.wr-know-btn.known { opacity: 1; color: var(--green); }
+.wr-know-btn.known:hover { color: var(--red); }
+
+.wr-loading .wr-korean { color: var(--overlay0); animation: pulse 1.5s infinite; }
+
+/* Word detail */
+#word-detail {
+  border-top: 1px solid var(--surface0);
+  background: var(--crust);
+  padding: 12px;
+  min-height: 180px;
+  max-height: 36%;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.word-detail-empty {
+  color: var(--overlay0); font-size: 12px; line-height: 1.6;
+  height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.detail-word {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+}
+.detail-word strong { font-size: 18px; color: var(--blue); }
+.detail-word span { font-size: 11px; color: var(--subtext0); }
+.detail-korean { color: var(--teal); font-size: 13px; margin-bottom: 8px; }
+.detail-definition {
+  color: var(--text); font-size: 12px; line-height: 1.55;
+  padding: 8px; background: var(--surface0); border-radius: 6px; margin-bottom: 10px;
+}
+.detail-meta {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.detail-chip {
+  background: var(--surface0); color: var(--subtext0);
+  border-radius: 999px; padding: 2px 8px; font-size: 10px;
+}
+.detail-example-title {
+  color: var(--overlay0); font-size: 10px; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 5px;
+}
+.detail-example { color: var(--subtext0); font-size: 12px; line-height: 1.55; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--surface1); border-top-color: var(--blue);
+  border-radius: 50%; animation: spin .8s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--surface1); color: var(--text);
+  padding: 8px 16px; border-radius: 8px; font-size: 13px;
+  opacity: 0; transition: opacity .3s, transform .3s;
+  pointer-events: none; z-index: 100;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<input type="file" id="file-input" accept=".pdf" style="display:none">
+
+<!-- Drag-and-drop overlay -->
+<div id="drag-overlay">
+  <div class="drag-icon">📄</div>
+  <div class="drag-text">PDF를 여기에 놓으세요</div>
+  <div class="drag-sub">논문 PDF 파일을 드래그하여 업로드</div>
+</div>
+
+<!-- ── Header ── -->
+<div id="header">
+  <span id="logo">📄 PaperVocab</span>
+  <button id="sidebar-show-btn" title="단어장 열기" style="display:none;background:none;border:none;color:var(--subtext0);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:4px;align-items:center;" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--subtext0)'" onclick="toggleSidebar(false)">📚</button>
+  <button id="upload-btn">+ PDF 업로드</button>
+  <span id="paper-title">논문 PDF를 업로드하여 시작하세요</span>
+  <div id="view-toggle-group">
+    <button class="vbtn active" data-view="split">분할 보기</button>
+    <button class="vbtn" data-view="pdf">PDF만</button>
+    <button class="vbtn" data-view="trans">번역만</button>
+  </div>
+  <div id="page-controls">
+    <button class="page-btn" id="prev-btn" disabled>‹</button>
+    <span id="page-info">— / —</span>
+    <button class="page-btn" id="next-btn" disabled>›</button>
+  </div>
+</div>
+
+<!-- ── Main Split ── -->
+<div id="main">
+
+  <!-- ── Left Sidebar: Vocabulary ── -->
+  <div id="vocab-section">
+    <div id="vocab-header">
+      <span id="vocab-title">📚 단어장</span>
+      <span id="vocab-count">0 단어</span>
+      <button id="vocab-toggle" title="단어장 닫기">◀</button>
+    </div>
+    <div id="vocab-search-row">
+      <input type="text" id="vocab-search" placeholder="단어 검색...">
+    </div>
+    <div id="vocab-filter-btns">
+      <button class="fbtn active" data-filter="all">전체</button>
+      <button class="fbtn" data-filter="current">현재 논문</button>
+      <button class="fbtn" data-filter="repeated">재등장</button>
+      <button class="fbtn" data-filter="known">알고 있음</button>
+    </div>
+    <div id="vocab-col-header">
+      <span style="width:14px;flex-shrink:0"></span>
+      <span style="flex:1">단어</span>
+      <span style="width:68px;flex-shrink:0">한국어</span>
+      <span style="width:28px;flex-shrink:0;text-align:right">빈도</span>
+      <span style="width:16px;flex-shrink:0"></span>
+    </div>
+    <div id="vocab-content">
+      <div style="display:flex;align-items:center;justify-content:center;padding:32px 12px;color:var(--overlay0);font-size:12px;text-align:center;line-height:1.6">
+        논문을 업로드하면<br>중요 단어가 여기에 표시됩니다
+      </div>
+    </div>
+    <div id="word-detail">
+      <div class="word-detail-empty">단어를 클릭하면 뜻, 예문, 출현 정보를 볼 수 있습니다</div>
+    </div>
+  </div>
+
+  <!-- Sidebar resize handle -->
+  <div id="sidebar-divider"></div>
+
+  <!-- Left: PDF Viewer -->
+  <div class="panel" id="left-panel">
+    <div class="empty-state" id="empty-left">
+      <div class="icon">📑</div>
+      <p>PDF 파일을 업로드하세요</p>
+    </div>
+    <canvas id="pdf-canvas" style="display:none"></canvas>
+  </div>
+
+  <div id="divider"></div>
+
+  <!-- Right: Translation -->
+  <div class="panel" id="right-panel">
+    <div class="empty-state" id="empty-right">
+      <div class="icon">🇰🇷</div>
+      <p>번역이 여기에 표시됩니다</p>
+    </div>
+    <div id="translation-wrapper" style="display:none">
+      <h3>한국어 번역 (MyMemory API)</h3>
+      <div id="translation-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────
+// Setup
+// ──────────────────────────────────────────────
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const VOCAB_KEY  = 'pv_vocabulary';
+const PAPERS_KEY = 'pv_papers';
+const KNOWN_KEY  = 'pv_known';
+
+const state = {
+  pdf: null,
+  currentPage: 1,
+  totalPages: 0,
+  pageTexts: {},
+  pageTranslations: {},
+  paperText: '',
+  paperTitle: '',
+  paperId: null,
+  currentPaperWords: [],   // word list for current paper
+  selectedWord: null,
+  vocabCollapsed: false,
+  vocabFilter: 'all',
+  viewMode: 'split',
+};
+
+let allVocabulary = JSON.parse(localStorage.getItem(VOCAB_KEY)  || '{}');
+let allPapers     = JSON.parse(localStorage.getItem(PAPERS_KEY) || '{}');
+let knownWords    = new Set(JSON.parse(localStorage.getItem(KNOWN_KEY) || '[]'));
+
+function toggleKnown(word) {
+  if (knownWords.has(word)) {
+    knownWords.delete(word);
+  } else {
+    knownWords.add(word);
+  }
+  localStorage.setItem(KNOWN_KEY, JSON.stringify([...knownWords]));
+  renderVocabulary();
+}
+
+// ──────────────────────────────────────────────
+// Stopwords (common English + academic filler)
+// ──────────────────────────────────────────────
+const STOPWORDS = new Set([
+  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+  'from','as','is','are','was','were','been','be','have','has','had','do','does',
+  'did','will','would','could','should','may','might','must','shall','can','this',
+  'that','these','those','it','its','they','them','their','there','here','where',
+  'when','which','who','what','how','not','no','nor','so','yet','both','either',
+  'neither','each','every','all','any','few','more','most','other','some','such',
+  'than','then','too','very','just','also','into','onto','upon','about','above',
+  'below','between','through','during','before','after','since','until','while',
+  'although','though','even','if','unless','because','however','therefore','thus',
+  'hence','moreover','furthermore','nevertheless','our','we','us','you','your',
+  'he','him','his','she','her','they','them','their','its','figure','table',
+  'section','paper','article','work','study','research','show','shows','shown',
+  'propose','proposed','present','presents','using','used','based','results',
+  'result','methods','method','approach','approaches','data','new','two','three',
+  'first','second','third','one','can','within','without','under','over','along',
+  'across','against','among','around','behind','beside','beyond','despite','except',
+  'toward','towards','upon','versus','same','different','large','small','high',
+  'low','many','much','well','also','both','however','whether','while','where',
+  'given','make','made','take','taken','come','goes','set','sets','used','become',
+  'between','case','cases','each','general','number','often','only','then','very',
+  'form','forms','type','types','show','shown','order','orders','part','parts',
+  'due','per','i.e','e.g','et','al','fig','eq','ref','refs'
+]);
+
+const TERM_GLOSSARY = {
+  accuracy: '정확도',
+  adaptive: '적응형',
+  algorithm: '알고리즘',
+  alignment: '정렬, 정합',
+  annotation: '주석, 어노테이션',
+  architecture: '구조, 아키텍처',
+  attention: '어텐션, 주의 메커니즘',
+  augmentation: '증강',
+  baseline: '기준 모델, 베이스라인',
+  benchmark: '성능 평가 기준, 벤치마크',
+  calibration: '보정, 캘리브레이션',
+  classification: '분류',
+  clustering: '군집화, 클러스터링',
+  complexity: '복잡도',
+  constraint: '제약 조건',
+  convergence: '수렴',
+  correlation: '상관관계',
+  dataset: '데이터셋',
+  decoder: '디코더',
+  degradation: '성능 저하, 열화',
+  detection: '검출, 탐지',
+  diffusion: '확산',
+  dimensional: '차원의',
+  distribution: '분포',
+  embedding: '임베딩, 벡터 표현',
+  encoder: '인코더',
+  estimation: '추정',
+  evaluation: '평가',
+  extraction: '추출',
+  feature: '특징, 특성',
+  framework: '프레임워크, 체계',
+  gradient: '그래디언트, 기울기',
+  inference: '추론',
+  initialization: '초기화',
+  interaction: '상호작용',
+  latency: '지연 시간',
+  learning: '학습',
+  likelihood: '가능도',
+  localization: '위치 추정, 국소화',
+  matrix: '행렬',
+  mechanism: '메커니즘, 작동 방식',
+  metric: '평가지표',
+  modality: '모달리티, 양식',
+  module: '모듈',
+  objective: '목적 함수, 목표',
+  optimization: '최적화',
+  parameter: '매개변수, 파라미터',
+  prediction: '예측',
+  preprocessing: '전처리',
+  probability: '확률',
+  propagation: '전파',
+  regression: '회귀',
+  regularization: '정규화',
+  representation: '표현, 표상',
+  resolution: '해상도, 분해능',
+  retrieval: '검색, 검색 기반 추출',
+  robustness: '강건성',
+  sampling: '샘플링',
+  scalability: '확장성',
+  segmentation: '분할, 세그멘테이션',
+  semantic: '의미론적',
+  sequence: '시퀀스, 순서열',
+  simulation: '시뮬레이션',
+  sparse: '희소한',
+  stability: '안정성',
+  stochastic: '확률적',
+  supervision: '지도 학습 신호',
+  synthesis: '합성',
+  threshold: '임계값',
+  tokenizer: '토크나이저',
+  training: '학습, 훈련',
+  trajectory: '궤적',
+  transformer: '트랜스포머',
+  validation: '검증',
+  variance: '분산',
+  vector: '벡터'
+};
+
+// ──────────────────────────────────────────────
+// PDF Loading
+// ──────────────────────────────────────────────
+async function loadPDF(file) {
+  showToast('📂 PDF 로딩 중...');
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+
+    state.pdf          = pdf;
+    state.totalPages   = pdf.numPages;
+    state.currentPage  = 1;
+    state.pageTexts    = {};
+    state.pageTranslations = {};
+    state.paperText    = '';
+    state.paperTitle   = file.name.replace(/\.pdf$/i, '');
+    state.paperId      = generateId(state.paperTitle);
+    state.currentPaperWords = [];
+    state.selectedWord = null;
+
+    if (!allPapers[state.paperId]) {
+      allPapers[state.paperId] = {
+        title: state.paperTitle,
+        date: new Date().toISOString().split('T')[0],
+        pages: pdf.numPages
+      };
+      localStorage.setItem(PAPERS_KEY, JSON.stringify(allPapers));
+    }
+
+    document.getElementById('paper-title').textContent = state.paperTitle;
+    document.getElementById('prev-btn').disabled = true;
+    document.getElementById('next-btn').disabled = pdf.numPages <= 1;
+    document.getElementById('empty-left').style.display  = 'none';
+    document.getElementById('empty-right').style.display = 'none';
+    document.getElementById('pdf-canvas').style.display  = 'block';
+    document.getElementById('translation-wrapper').style.display = 'block';
+
+    await renderPage(1);
+
+    // Background: extract all text → vocabulary
+    showToast('📚 전체 텍스트 추출 중...');
+    extractAllText().then(fullText => {
+      state.paperText = fullText;
+      return processVocabulary(fullText);
+    });
+  } catch (e) {
+    showToast('❌ PDF 로딩 실패: ' + e.message);
+  }
+}
+
+function generateId(title) {
+  return title.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) + '_' + Date.now().toString(36);
+}
+
+// ──────────────────────────────────────────────
+// Rendering
+// ──────────────────────────────────────────────
+async function renderPage(pageNum) {
+  if (!state.pdf) return;
+  state.currentPage = pageNum;
+
+  const page      = await state.pdf.getPage(pageNum);
+  const container = document.getElementById('left-panel');
+  const canvas    = document.getElementById('pdf-canvas');
+  const maxW      = container.clientWidth - 32;
+
+  const vp0    = page.getViewport({ scale: 1 });
+  const scale  = Math.min(maxW / vp0.width, 2.5);
+  const vp     = page.getViewport({ scale });
+
+  canvas.width  = vp.width;
+  canvas.height = vp.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+  document.getElementById('page-info').textContent = `${pageNum} / ${state.totalPages}`;
+  document.getElementById('prev-btn').disabled = pageNum <= 1;
+  document.getElementById('next-btn').disabled = pageNum >= state.totalPages;
+
+  const text = await extractPageText(pageNum);
+  await translatePage(pageNum, text);
+}
+
+// ──────────────────────────────────────────────
+// Text Extraction
+// ──────────────────────────────────────────────
+async function extractPageText(pageNum) {
+  if (state.pageTexts[pageNum]) return state.pageTexts[pageNum];
+  const page    = await state.pdf.getPage(pageNum);
+  const content = await page.getTextContent();
+
+  let text = '', lastY = null;
+  for (const item of content.items) {
+    if (lastY !== null && Math.abs(item.transform[5] - lastY) > 4) text += '\n';
+    if (text && !text.endsWith('\n') && item.str && !/^\s|[.,;:!?)]/.test(item.str)) text += ' ';
+    text += item.str;
+    lastY = item.transform[5];
+  }
+  state.pageTexts[pageNum] = text.trim();
+  return state.pageTexts[pageNum];
+}
+
+async function extractAllText() {
+  const pages = [];
+  for (let i = 1; i <= state.totalPages; i++) {
+    pages.push(await extractPageText(i));
+  }
+  return pages.join('\n');
+}
+
+// ──────────────────────────────────────────────
+// Translation (MyMemory API, chunked)
+// ──────────────────────────────────────────────
+async function translatePage(pageNum, text) {
+  if (state.pageTranslations[pageNum]) {
+    renderTranslation(state.pageTranslations[pageNum]);
+    return;
+  }
+
+  const el = document.getElementById('translation-content');
+  el.innerHTML = '<div class="trans-loading"><span class="spinner"></span> 번역 중... (MyMemory API)</div>';
+
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) {
+    el.innerHTML = '<div class="trans-paragraph" style="color:var(--overlay0)">이 페이지에서 텍스트를 추출할 수 없습니다.</div>';
+    return;
+  }
+
+  const chunks = splitChunks(clean, 380);
+  const translated = [];
+
+  for (const chunk of chunks) {
+    try {
+      const t = await callTranslate(chunk);
+      translated.push({ source: chunk, translation: t, error: false });
+    } catch {
+      translated.push({
+        source: chunk,
+        translation: '[번역 실패 - API 하루 한도 초과 또는 네트워크 오류]',
+        error: true
+      });
+    }
+    renderTranslation(translated);
+    await sleep(350);
+  }
+
+  state.pageTranslations[pageNum] = translated;
+}
+
+function splitChunks(text, maxLen) {
+  const sentences = splitSentences(text);
+  const chunks = [];
+  let cur = '';
+  for (const s of sentences) {
+    if ((cur + s).length > maxLen && cur) { chunks.push(cur.trim()); cur = s; }
+    else cur += ' ' + s;
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(c => c.length > 1);
+}
+
+async function callTranslate(text) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=en|ko`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.responseStatus === 200) return data.responseData.translatedText;
+  throw new Error(data.responseStatus);
+}
+
+function renderTranslation(text) {
+  const el = document.getElementById('translation-content');
+
+  if (Array.isArray(text)) {
+    el.innerHTML = text.map(pair => `
+      <div class="sentence-card">
+        <div class="sentence-original">${esc(pair.source)}</div>
+        <div class="sentence-translated ${pair.error ? 'sentence-error' : ''}">${esc(pair.translation)}</div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  const paras = String(text).split('\n').filter(p => p.trim());
+  el.innerHTML = paras.map(p =>
+    `<div class="trans-paragraph">${esc(p.trim())}</div>`
+  ).join('');
+}
+
+// ──────────────────────────────────────────────
+// Vocabulary Processing
+// ──────────────────────────────────────────────
+async function processVocabulary(fullText) {
+  // Extract word frequencies
+  const raw = fullText.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/);
+  const freq = {};
+  for (const w of raw) {
+    if (w.length >= 5 && !STOPWORDS.has(w) && /^[a-z]+$/.test(w)) {
+      freq[w] = (freq[w] || 0) + 1;
+    }
+  }
+
+  // Top 70 words by frequency
+  const topWords = Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 70)
+    .map(([word, count]) => ({ word, count }));
+
+  state.currentPaperWords = topWords.map(w => w.word);
+
+  // Show cards immediately (loading state)
+  topWords.forEach(({ word }) => {
+    if (!allVocabulary[word]) {
+      allVocabulary[word] = { definition: '', pos: '', korean: '조회 중...', papers: [state.paperId], totalCount: 0, firstSeen: today() };
+    } else if (!allVocabulary[word].papers.includes(state.paperId)) {
+      allVocabulary[word].papers.push(state.paperId);
+    }
+    allVocabulary[word].totalCount = (allVocabulary[word].totalCount || 0) + freq[word];
+  });
+  renderVocabulary();
+
+  // Fetch definitions in background
+  let newCount = 0, repeatCount = 0;
+  for (const { word } of topWords) {
+    const needsLookup = !allVocabulary[word].definition || isUnhelpfulTranslation(allVocabulary[word].korean, word);
+    if (needsLookup) {
+      const def = await fetchDefinition(word);
+      allVocabulary[word] = { ...allVocabulary[word], ...def };
+      newCount++;
+      localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
+      renderVocabulary();
+      await sleep(120);
+    } else {
+      if (allVocabulary[word].papers.length > 1) repeatCount++;
+    }
+  }
+
+  localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
+  renderVocabulary();
+
+  showToast(`✅ 신규 ${newCount}개 단어 | 재등장 ${repeatCount}개 단어 발견!`);
+}
+
+async function fetchDefinition(word) {
+  let definition = '', pos = '', korean = '', koreanSource = '';
+  const glossary = getGlossaryTerm(word);
+
+  try {
+    const res  = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    if (res.ok) {
+      const data    = await res.json();
+      const meaning = data[0]?.meanings[0];
+      definition = meaning?.definitions[0]?.definition || '';
+      pos        = meaning?.partOfSpeech || '';
+    }
+  } catch {}
+
+  if (glossary) {
+    korean = glossary;
+    koreanSource = '내장 학술 용어집';
+  } else {
+    try {
+      korean = await translateTermFallback(word, definition);
+      koreanSource = isUnhelpfulTranslation(korean, word) ? '확인 필요' : 'MyMemory API';
+      await sleep(200);
+    } catch {}
+  }
+
+  if (isUnhelpfulTranslation(korean, word)) {
+    korean = '뜻 확인 필요';
+    koreanSource = '확인 필요';
+  }
+
+  return { definition, pos, korean, koreanSource };
+}
+
+function getGlossaryTerm(word) {
+  const key = String(word).toLowerCase();
+  if (TERM_GLOSSARY[key]) return TERM_GLOSSARY[key];
+  if (key.endsWith('s') && TERM_GLOSSARY[key.slice(0, -1)]) return TERM_GLOSSARY[key.slice(0, -1)];
+  if (key.endsWith('ed') && TERM_GLOSSARY[key.slice(0, -2)]) return TERM_GLOSSARY[key.slice(0, -2)];
+  if (key.endsWith('ing') && TERM_GLOSSARY[key.slice(0, -3)]) return TERM_GLOSSARY[key.slice(0, -3)];
+  return '';
+}
+
+async function translateTermFallback(word, definition) {
+  const direct = await callTranslate(word);
+  if (!isUnhelpfulTranslation(direct, word)) return direct;
+  if (!definition) return direct;
+
+  const prompt = `${word}: ${definition}`.slice(0, 450);
+  const translatedDefinition = await callTranslate(prompt);
+  if (!isUnhelpfulTranslation(translatedDefinition, word)) {
+    return cleanupDefinitionTranslation(translatedDefinition, word);
+  }
+  return direct;
+}
+
+function cleanupDefinitionTranslation(text, word) {
+  return String(text)
+    .replace(new RegExp(`^\\s*${word}\\s*[:：-]?\\s*`, 'i'), '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+}
+
+function isUnhelpfulTranslation(text, word) {
+  const value = String(text || '').trim();
+  if (!value) return true;
+  if (value === '조회 중...') return true;
+  if (value === '뜻 확인 필요') return false;
+  if (value.toLowerCase() === String(word).toLowerCase()) return true;
+  if (!hasKorean(value) && /^[a-z\s,.;:()/-]+$/i.test(value)) return true;
+  return false;
+}
+
+function hasKorean(text) {
+  return /[가-힣]/.test(String(text || ''));
+}
+
+// ──────────────────────────────────────────────
+// Vocabulary Render
+// ──────────────────────────────────────────────
+function renderVocabulary() {
+  const content  = document.getElementById('vocab-content');
+  const search   = document.getElementById('vocab-search').value.toLowerCase().trim();
+  const filter   = state.vocabFilter;
+
+  let wordList = Object.keys(allVocabulary);
+
+  // Filter
+  if (filter === 'known') {
+    wordList = wordList.filter(w => knownWords.has(w));
+  } else {
+    wordList = wordList.filter(w => !knownWords.has(w));
+    if (filter === 'current') {
+      wordList = wordList.filter(w => state.currentPaperWords.includes(w));
+    } else if (filter === 'repeated') {
+      wordList = wordList.filter(w => allVocabulary[w].papers.length > 1);
+    }
+  }
+  if (search) wordList = wordList.filter(w => w.includes(search));
+
+  // Sort: repeated first → frequency desc
+  wordList.sort((a, b) => {
+    const ar = allVocabulary[a].papers.length > 1;
+    const br = allVocabulary[b].papers.length > 1;
+    if (ar && !br) return -1;
+    if (!ar && br) return 1;
+    return (allVocabulary[b].totalCount || 0) - (allVocabulary[a].totalCount || 0);
+  });
+
+  if (!wordList.length) {
+    content.innerHTML = '<div style="color:var(--overlay0);font-size:13px;display:flex;align-items:center;height:100%;justify-content:center;width:100%">표시할 단어가 없습니다</div>';
+    document.getElementById('vocab-count').textContent = '0 단어';
+    return;
+  }
+
+  document.getElementById('vocab-count').textContent = `${wordList.length} 단어`;
+
+  content.innerHTML = wordList.map(word => {
+    const info      = allVocabulary[word];
+    const repeated  = info.papers.length > 1;
+    const loading   = !info.definition && info.korean === '조회 중...';
+    const isKnown   = knownWords.has(word);
+    const paperList = info.papers
+      .map(id => allPapers[id]?.title || id.split('_')[0])
+      .join(' · ');
+
+    const rowClass = [
+      'word-row',
+      repeated ? 'repeated-row' : 'new-row',
+      isKnown  ? 'known-row'    : '',
+      loading  ? 'wr-loading'   : '',
+      state.selectedWord === word ? 'selected' : '',
+    ].join(' ');
+
+    const indicatorClass = isKnown ? 'known' : repeated ? 'repeated' : 'new';
+
+    const tooltip = [
+      info.pos ? `[${info.pos}]` : '',
+      info.definition || '',
+      repeated ? `📌 ${paperList}` : ''
+    ].filter(Boolean).join('  ');
+
+    return `<div class="${rowClass}" title="${esc(tooltip)}" onclick="selectWord('${word}')">
+      <span class="wr-indicator ${indicatorClass}"></span>
+      <span class="wr-word">${esc(word)}</span>
+      <span class="wr-korean">${esc(info.korean || (loading ? '...' : '—'))}</span>
+      <span class="wr-freq">${info.totalCount || 0}</span>
+      <button class="wr-know-btn ${isKnown ? 'known' : ''}" onclick="event.stopPropagation();toggleKnown('${word}')" title="${isKnown ? '모르는 단어로 되돌리기' : '알고 있는 단어로 표시'}">
+        ${isKnown ? '✓' : '○'}
+      </button>
+    </div>`;
+  }).join('');
+
+  renderWordDetail();
+}
+
+function selectWord(word) {
+  state.selectedWord = word;
+  renderVocabulary();
+}
+
+function renderWordDetail() {
+  const detail = document.getElementById('word-detail');
+  if (!detail) return;
+
+  const word = state.selectedWord;
+  const info = word ? allVocabulary[word] : null;
+  if (!word || !info) {
+    detail.innerHTML = '<div class="word-detail-empty">단어를 클릭하면 뜻, 예문, 출현 정보를 볼 수 있습니다</div>';
+    return;
+  }
+
+  const paperList = info.papers
+    .map(id => allPapers[id]?.title || id.split('_')[0])
+    .join(', ');
+  const example = findExampleSentence(word);
+  const knownLabel = knownWords.has(word) ? '알고 있음' : '학습 중';
+
+  detail.innerHTML = `
+    <div class="detail-word">
+      <strong>${esc(word)}</strong>
+      <span>${esc(info.pos || '품사 정보 없음')}</span>
+    </div>
+    <div class="detail-korean">${esc(info.korean || '한국어 뜻 조회 중...')}</div>
+    <div class="detail-definition">${esc(info.definition || '영어 정의를 아직 가져오지 못했습니다.')}</div>
+    <div class="detail-meta">
+      <span class="detail-chip">빈도 ${info.totalCount || 0}</span>
+      <span class="detail-chip">${esc(knownLabel)}</span>
+      <span class="detail-chip">논문 ${info.papers.length}개</span>
+      <span class="detail-chip">${esc(info.koreanSource || '기본 번역')}</span>
+    </div>
+    <div class="detail-example-title">Example in paper</div>
+    <div class="detail-example">${esc(example || '현재 추출된 문장 안에서는 예문을 찾지 못했습니다.')}</div>
+    <div class="detail-example-title" style="margin-top:10px">Papers</div>
+    <div class="detail-example">${esc(paperList)}</div>
+  `;
+}
+
+function findExampleSentence(word) {
+  const source = state.paperText || Object.values(state.pageTexts).join('\n');
+  if (!source) return '';
+  const re = new RegExp(`\\b${word}\\b`, 'i');
+  return splitSentences(source)
+    .map(s => s.replace(/\s+/g, ' ').trim())
+    .find(s => re.test(s)) || '';
+}
+
+function splitSentences(text) {
+  return text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+}
+
+// ──────────────────────────────────────────────
+// View Mode (split / pdf / trans)
+// ──────────────────────────────────────────────
+function applyViewMode(mode) {
+  state.viewMode = mode;
+  const left    = document.getElementById('left-panel');
+  const right   = document.getElementById('right-panel');
+  const divider = document.getElementById('divider');
+
+  if (mode === 'split') {
+    left.style.display    = '';
+    right.style.display   = '';
+    divider.style.display = '';
+    left.style.flex       = '1';
+    left.style.width      = '';
+    right.style.flex      = '1';
+  } else if (mode === 'pdf') {
+    left.style.display    = '';
+    right.style.display   = 'none';
+    divider.style.display = 'none';
+    left.style.flex       = '1';
+    left.style.width      = '';
+  } else {
+    left.style.display    = 'none';
+    right.style.display   = '';
+    divider.style.display = 'none';
+    right.style.flex      = '1';
+  }
+
+  document.querySelectorAll('.vbtn').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === mode)
+  );
+}
+
+// ──────────────────────────────────────────────
+// Events
+// ──────────────────────────────────────────────
+document.getElementById('upload-btn').addEventListener('click', () =>
+  document.getElementById('file-input').click()
+);
+document.getElementById('file-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (file) await loadPDF(file);
+});
+
+document.getElementById('prev-btn').addEventListener('click', () => {
+  if (state.currentPage > 1) renderPage(state.currentPage - 1);
+});
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (state.currentPage < state.totalPages) renderPage(state.currentPage + 1);
+});
+
+// View mode buttons
+document.querySelectorAll('.vbtn').forEach(btn =>
+  btn.addEventListener('click', () => applyViewMode(btn.dataset.view))
+);
+
+// Vocab sidebar toggle
+function toggleSidebar(collapsed) {
+  state.vocabCollapsed = collapsed ?? !state.vocabCollapsed;
+  const section = document.getElementById('vocab-section');
+  const btn     = document.getElementById('vocab-toggle');
+  const showBtn = document.getElementById('sidebar-show-btn');
+  section.classList.toggle('collapsed', state.vocabCollapsed);
+  btn.textContent    = state.vocabCollapsed ? '▶' : '◀';
+  btn.title          = state.vocabCollapsed ? '단어장 열기' : '단어장 닫기';
+  if (showBtn) showBtn.style.display = state.vocabCollapsed ? 'flex' : 'none';
+}
+document.getElementById('vocab-toggle').addEventListener('click', () => toggleSidebar());
+
+// Vocab filter buttons
+document.querySelectorAll('.fbtn').forEach(btn =>
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    state.vocabFilter = btn.dataset.filter;
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', b === btn));
+    renderVocabulary();
+  })
+);
+
+// Vocab search
+document.getElementById('vocab-search').addEventListener('input', renderVocabulary);
+
+// ── Draggable sidebar divider ──
+const sidebarDivider = document.getElementById('sidebar-divider');
+const vocabSection   = document.getElementById('vocab-section');
+let sdrag = false, sstartX = 0, sstartW = 0;
+
+sidebarDivider.addEventListener('mousedown', e => {
+  if (state.vocabCollapsed) return;
+  sdrag    = true;
+  sstartX  = e.clientX;
+  sstartW  = vocabSection.getBoundingClientRect().width;
+  sidebarDivider.classList.add('dragging');
+  document.body.style.cursor     = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+document.addEventListener('mousemove', e => {
+  if (!sdrag) return;
+  const newW = Math.max(180, Math.min(420, sstartW + e.clientX - sstartX));
+  vocabSection.style.width = newW + 'px';
+});
+document.addEventListener('mouseup', () => {
+  if (sdrag) {
+    sdrag = false;
+    sidebarDivider.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  }
+});
+
+// ── Draggable divider ──
+const divider  = document.getElementById('divider');
+const leftPanel  = document.getElementById('left-panel');
+const rightPanel = document.getElementById('right-panel');
+let drag = false, startX = 0, startW = 0;
+
+divider.addEventListener('mousedown', e => {
+  drag   = true;
+  startX = e.clientX;
+  startW = leftPanel.getBoundingClientRect().width;
+  divider.classList.add('dragging');
+  document.body.style.cursor     = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+document.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const total  = leftPanel.parentElement.getBoundingClientRect().width;
+  const newW   = Math.max(180, Math.min(total - 180, startW + e.clientX - startX));
+  leftPanel.style.flex  = 'none';
+  leftPanel.style.width = newW + 'px';
+  rightPanel.style.flex = '1';
+  rightPanel.style.width = '';
+});
+document.addEventListener('mouseup', () => {
+  if (drag) {
+    drag = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  }
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') document.getElementById('next-btn').click();
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   document.getElementById('prev-btn').click();
+});
+
+// ──────────────────────────────────────────────
+// Utils
+// ──────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const today = ()  => new Date().toISOString().split('T')[0];
+const esc   = s   => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ──────────────────────────────────────────────
+// Drag-and-drop upload
+// ──────────────────────────────────────────────
+const dragOverlay = document.getElementById('drag-overlay');
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+  e.preventDefault();
+  dragCounter++;
+  if (dragCounter === 1) dragOverlay.classList.add('active');
+});
+
+document.addEventListener('dragleave', e => {
+  dragCounter--;
+  if (dragCounter === 0) dragOverlay.classList.remove('active');
+});
+
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+});
+
+document.addEventListener('drop', async e => {
+  e.preventDefault();
+  dragCounter = 0;
+  dragOverlay.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') {
+    await loadPDF(file);
+  } else if (file) {
+    showToast('❌ PDF 파일만 업로드 가능합니다');
+  }
+});
+
+// Init: show existing vocabulary if any
+if (Object.keys(allVocabulary).length > 0) {
+  state.vocabFilter = 'all';
+  renderVocabulary();
+}
+</script>
+</body>
+</html>
