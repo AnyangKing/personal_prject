@@ -225,6 +225,36 @@
 
     /* tooltip */
     .tooltip{position:fixed;background:rgba(0,0,0,.75);color:white;padding:5px 12px;border-radius:8px;font-size:.9rem;pointer-events:none;opacity:0;transition:opacity .2s;z-index:99}
+
+    /* ── AI 회화 ── */
+    .ai-input-wrap{background:rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:24px}
+    .ai-examples{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;font-size:.8rem;color:rgba(255,255,255,.45)}
+    .ai-ex-btn{background:rgba(255,183,77,.12);border:1px solid rgba(255,183,77,.35);color:rgba(255,183,77,.85);padding:5px 12px;border-radius:16px;font-size:.8rem;cursor:pointer;transition:all .15s}
+    .ai-ex-btn:hover{background:rgba(255,183,77,.28)}
+    .ai-input-row{display:flex;gap:10px;flex-wrap:wrap}
+    .ai-input{flex:1;min-width:200px;padding:12px 16px;border-radius:12px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:white;font-size:.95rem;outline:none}
+    .ai-input::placeholder{color:rgba(255,255,255,.3)}
+    .ai-input:focus{border-color:rgba(255,183,77,.6)}
+    .ai-send-btn{background:linear-gradient(135deg,#f39c12,#e67e22);border:none;color:white;padding:12px 22px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .15s,opacity .15s;box-shadow:0 3px 12px rgba(243,156,18,.3)}
+    .ai-send-btn:hover:not(:disabled){transform:scale(1.04)}
+    .ai-send-btn:disabled{opacity:.5;cursor:default}
+    .ai-phrases{display:flex;flex-direction:column;gap:12px}
+    .ai-phrase-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:background .15s}
+    .ai-phrase-card:hover{background:rgba(255,255,255,.16)}
+    .apc-num{width:24px;height:24px;border-radius:50%;background:rgba(255,183,77,.25);border:1px solid rgba(255,183,77,.45);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:rgba(255,183,77,.9);flex-shrink:0}
+    .apc-main{flex:1;min-width:0}
+    .apc-jp{font-size:1.45rem;font-weight:700;margin-bottom:4px}
+    .apc-reading{font-size:.82rem;color:#f39c12;margin-bottom:4px}
+    .apc-kr{font-size:.88rem;color:rgba(255,255,255,.65)}
+    .apc-speak-btn{background:rgba(255,183,77,.15);border:1px solid rgba(255,183,77,.4);color:rgba(255,183,77,.9);width:40px;height:40px;border-radius:50%;font-size:1.05rem;cursor:pointer;flex-shrink:0;transition:all .15s}
+    .apc-speak-btn:hover{background:rgba(255,183,77,.3);transform:scale(1.1)}
+    .ai-loading{text-align:center;padding:36px;color:rgba(255,255,255,.45);font-size:.95rem}
+    .ai-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,183,77,.7);margin:0 3px;animation:aidot 1.2s infinite}
+    .ai-dot:nth-child(2){animation-delay:.2s}
+    .ai-dot:nth-child(3){animation-delay:.4s}
+    @keyframes aidot{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-6px);opacity:1}}
+    .ai-error{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);border-radius:12px;padding:16px;color:#e74c3c;font-size:.88rem;text-align:center;line-height:1.6}
+    .ai-result-header{font-size:.82rem;color:rgba(255,255,255,.45);letter-spacing:1px;margin-bottom:14px;padding:0 2px}
   </style>
 </head>
 <body>
@@ -245,6 +275,7 @@
     <button id="btn-quiz"     onclick="showPage('quiz')">퀴즈</button>
     <button id="btn-stats"    onclick="showPage('stats')">통계</button>
     <button id="btn-learn"    onclick="showPage('learn')">단계별 학습</button>
+    <button id="btn-ai"       onclick="showPage('ai')" style="border-color:rgba(255,183,77,.6);color:rgba(255,183,77,.9)">🤖 AI 회화</button>
   </nav>
 </header>
 
@@ -371,6 +402,28 @@
       </div>
       <div id="lesson-content"></div>
     </div>
+  </div>
+
+  <!-- ══ AI 회화 ══ -->
+  <div id="page-ai" style="display:none">
+    <p class="section-title">상황을 입력하면 AI가 그 상황에서 쓸 일본어 표현을 알려드려요</p>
+    <div class="ai-input-wrap">
+      <div class="ai-examples">
+        <span>예시 →</span>
+        <button class="ai-ex-btn" onclick="setAISituation('일본 편의점에서 계산할 때')">편의점 계산</button>
+        <button class="ai-ex-btn" onclick="setAISituation('일본 식당에서 음식 주문할 때')">식당 주문</button>
+        <button class="ai-ex-btn" onclick="setAISituation('길을 잃었을 때 도움 요청')">길 잃었을 때</button>
+        <button class="ai-ex-btn" onclick="setAISituation('호텔 체크인할 때')">호텔 체크인</button>
+        <button class="ai-ex-btn" onclick="setAISituation('전철역에서 표 사는 방법 물어볼 때')">전철 표 구매</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="ai-input" type="text"
+          placeholder="상황을 한국어로 입력하세요 (예: 일본 약국에서 두통약 살 때)"
+          onkeydown="if(event.key==='Enter')askAI()">
+        <button class="ai-send-btn" id="ai-send-btn" onclick="askAI()">AI에게 물어보기 ✨</button>
+      </div>
+    </div>
+    <div id="ai-result"></div>
   </div>
 
 </div>
@@ -1159,7 +1212,7 @@ function showLessonResult(){
 /* ══════════════════════════════════════════════
    페이지 전환
 ══════════════════════════════════════════════ */
-const PAGES=['chart','katakana','compare','quiz','stats','learn'];
+const PAGES=['chart','katakana','compare','quiz','stats','learn','ai'];
 function showPage(page){
   PAGES.forEach(p=>{
     const el=document.getElementById('page-'+p);
@@ -1174,6 +1227,96 @@ function showPage(page){
     renderCurriculum();
   }
   if(page==='stats') renderStats();
+}
+
+/* ══════════════════════════════════════════════
+   AI 회화 (상황별 표현 생성)
+══════════════════════════════════════════════ */
+const GEMINI_KEY = 'AIzaSyC3JXgudf1l3Hcf8buoeP3Ot7WbChmgBJk'; // 
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+function setAISituation(text){
+  const inp = document.getElementById('ai-input');
+  inp.value = text;
+  inp.focus();
+}
+
+async function askAI(){
+  const inp = document.getElementById('ai-input');
+  const situation = inp.value.trim();
+  if(!situation){ inp.focus(); showToast('상황을 입력해주세요!'); return; }
+
+  const resultEl = document.getElementById('ai-result');
+  const sendBtn  = document.getElementById('ai-send-btn');
+  sendBtn.disabled = true;
+  resultEl.innerHTML = `<div class="ai-loading"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><br><br>AI가 표현을 만들고 있어요...</div>`;
+
+  try {
+    const phrases = await callGemini(situation);
+    renderAIResult(situation, phrases);
+    addXP(5);
+    showToast('표현 생성 완료! +5XP ✨');
+  } catch(e) {
+    resultEl.innerHTML = `<div class="ai-error">⚠️ 오류가 발생했어요<br><small>${e.message}</small><br><small style="opacity:.7">인터넷 연결 또는 API 키를 확인해주세요.</small></div>`;
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+async function callGemini(situation){
+  const prompt = `당신은 친절한 일본어 선생님입니다. 아래 상황에서 실제로 자주 쓰는 일본어 표현 6개를 알려주세요.
+
+상황: ${situation}
+
+반드시 아래 JSON 배열 형식으로만 답하세요. 설명, 마크다운 코드블록 등 다른 텍스트는 절대 포함하지 마세요.
+[
+  {"japanese":"일본어 문장","reading":"히라가나 독음","korean":"자연스러운 한국어 번역","pronunciation":"한국어 발음 표기"}
+]
+
+규칙:
+- japanese: 실제 일본어 (한자+가나 혼합 OK)
+- reading: 히라가나로만 표기
+- korean: 자연스럽고 실용적인 한국어 번역
+- pronunciation: 한국어로 발음 표기 (예: 스미마셍, 아리가토고자이마스)`;
+
+  const res = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+  });
+
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err?.error?.message || 'HTTP ' + res.status);
+  }
+
+  const data = await res.json();
+  const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  const match = text.match(/\[[\s\S]*\]/);
+  if(!match) throw new Error('AI 응답을 파싱할 수 없어요. 다시 시도해주세요.');
+  let parsed;
+  try { parsed = JSON.parse(match[0]); } catch(e){ throw new Error('JSON 파싱 실패. 다시 시도해주세요.'); }
+  if(!Array.isArray(parsed)||!parsed.length) throw new Error('표현 목록이 비어있어요. 다시 시도해주세요.');
+  return parsed;
+}
+
+function renderAIResult(situation, phrases){
+  const resultEl = document.getElementById('ai-result');
+  const escQ = s => (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  resultEl.innerHTML = `
+    <div class="ai-result-header">📍 상황: ${situation} — ${phrases.length}개 표현</div>
+    <div class="ai-phrases">
+      ${phrases.map((p,i)=>`
+        <div class="ai-phrase-card">
+          <div class="apc-num">${i+1}</div>
+          <div class="apc-main">
+            <div class="apc-jp">${p.japanese||''}</div>
+            <div class="apc-reading">${p.reading||''}</div>
+            <div class="apc-kr">🇰🇷 ${p.korean||''} &nbsp;·&nbsp; 🗣 ${p.pronunciation||''}</div>
+          </div>
+          <button class="apc-speak-btn" title="발음 듣기" onclick="speak('${escQ(p.japanese)}')">🔊</button>
+        </div>`).join('')}
+    </div>`;
 }
 
 /* ══════════════════════════════════════════════
