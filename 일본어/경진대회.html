@@ -1230,10 +1230,133 @@ function showPage(page){
 }
 
 /* ══════════════════════════════════════════════
-   AI 회화 (상황별 표현 생성)
+   AI 회화 — 오프라인 상황 DB + Gemini 연동
 ══════════════════════════════════════════════ */
-const GEMINI_KEY = 'AIzaSyC3JXgudf1l3Hcf8buoeP3Ot7WbChmgBJk'; // 
+const GEMINI_KEY = 'AIzaSyB3AxzlwPkygKBUg_qXsp1Mdd1zB-ga4Yk';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+/* ── 내장 상황별 표현 데이터베이스 ── */
+const SITUATION_DB = [
+  { keys:['편의점','계산','결제','콘비니'], title:'편의점에서 계산할 때',
+    phrases:[
+      {japanese:'これをください',reading:'これをください',korean:'이걸 주세요',pronunciation:'코레오 쿠다사이'},
+      {japanese:'袋はいりません',reading:'ふくろはいりません',korean:'봉투는 필요 없어요',pronunciation:'후쿠로와 이리마셍'},
+      {japanese:'温めてください',reading:'あたためてください',korean:'데워 주세요',pronunciation:'아타타메테 쿠다사이'},
+      {japanese:'カードで払えますか',reading:'カードではらえますか',korean:'카드로 계산할 수 있나요?',pronunciation:'카도데 하라에마스카'},
+      {japanese:'レシートをください',reading:'レシートをください',korean:'영수증 주세요',pronunciation:'레시-토오 쿠다사이'},
+      {japanese:'いくらですか',reading:'いくらですか',korean:'얼마예요?',pronunciation:'이쿠라데스카'},
+    ]},
+  { keys:['식당','레스토랑','음식점','주문','밥','요리','먹'], title:'식당에서 주문할 때',
+    phrases:[
+      {japanese:'メニューをください',reading:'メニューをください',korean:'메뉴판 주세요',pronunciation:'메뉴-오 쿠다사이'},
+      {japanese:'これをひとつください',reading:'これをひとつください',korean:'이거 하나 주세요',pronunciation:'코레오 히토츠 쿠다사이'},
+      {japanese:'おすすめは何ですか',reading:'おすすめはなんですか',korean:'추천 메뉴가 뭔가요?',pronunciation:'오스스메와 난데스카'},
+      {japanese:'辛くないものはありますか',reading:'からくないものはありますか',korean:'안 매운 음식 있나요?',pronunciation:'카라쿠나이 모노와 아리마스카'},
+      {japanese:'お会計をお願いします',reading:'おかいけいをおねがいします',korean:'계산서 주세요',pronunciation:'오카이케이오 오네가이시마스'},
+      {japanese:'おいしかったです',reading:'おいしかったです',korean:'맛있었어요',pronunciation:'오이시캇타데스'},
+    ]},
+  { keys:['길','잃','모르','어디','방향','찾'], title:'길을 잃었을 때',
+    phrases:[
+      {japanese:'道に迷いました',reading:'みちにまよいました',korean:'길을 잃었어요',pronunciation:'미치니 마요이마시타'},
+      {japanese:'〜はどこですか',reading:'〜はどこですか',korean:'~은 어디에 있나요?',pronunciation:'~와 도코데스카'},
+      {japanese:'この地図で教えてください',reading:'このちずでおしえてください',korean:'이 지도에서 알려주세요',pronunciation:'코노 치즈데 오시에테 쿠다사이'},
+      {japanese:'まっすぐ行ってください',reading:'まっすぐいってください',korean:'직진해서 가세요',pronunciation:'맛스구 잇테 쿠다사이'},
+      {japanese:'〜まで何分かかりますか',reading:'〜までなんぷんかかりますか',korean:'~까지 몇 분 걸려요?',pronunciation:'~마데 난푼 카카리마스카'},
+      {japanese:'ここはどこですか',reading:'ここはどこですか',korean:'여기가 어디예요?',pronunciation:'코코와 도코데스카'},
+    ]},
+  { keys:['호텔','체크인','체크아웃','방','숙박','숙소'], title:'호텔 체크인할 때',
+    phrases:[
+      {japanese:'チェックインをお願いします',reading:'チェックインをおねがいします',korean:'체크인 부탁드려요',pronunciation:'체크-인오 오네가이시마스'},
+      {japanese:'予約した〜です',reading:'よやくした〜です',korean:'예약한 ~입니다',pronunciation:'요야쿠시타 ~데스'},
+      {japanese:'部屋のカギをください',reading:'へやのカギをください',korean:'방 열쇠 주세요',pronunciation:'헤야노 카기오 쿠다사이'},
+      {japanese:'Wi-Fiのパスワードは何ですか',reading:'Wi-Fiのパスワードはなんですか',korean:'와이파이 비밀번호가 뭔가요?',pronunciation:'와이파이노 파스와-도와 난데스카'},
+      {japanese:'朝食は何時からですか',reading:'ちょうしょくはなんじからですか',korean:'조식은 몇 시부터예요?',pronunciation:'초쇼쿠와 난지 카라데스카'},
+      {japanese:'チェックアウトは何時ですか',reading:'チェックアウトはなんじですか',korean:'체크아웃은 몇 시예요?',pronunciation:'체크아우토와 난지데스카'},
+    ]},
+  { keys:['전철','지하철','버스','기차','교통','표','탑승','신칸센','역'], title:'전철/대중교통 이용할 때',
+    phrases:[
+      {japanese:'〜まで一枚ください',reading:'〜までいちまいください',korean:'~까지 한 장 주세요',pronunciation:'~마데 이치마이 쿠다사이'},
+      {japanese:'〜行きの電車はどれですか',reading:'〜いきのでんしゃはどれですか',korean:'~행 전철은 어느 것인가요?',pronunciation:'~유키노 덴샤와 도레데스카'},
+      {japanese:'この電車は〜に止まりますか',reading:'このでんしゃは〜にとまりますか',korean:'이 전철은 ~에 서나요?',pronunciation:'코노 덴샤와 ~니 토마리마스카'},
+      {japanese:'乗り換えはどこですか',reading:'のりかえはどこですか',korean:'환승은 어디서 해요?',pronunciation:'노리카에와 도코데스카'},
+      {japanese:'終電は何時ですか',reading:'しゅうでんはなんじですか',korean:'막차는 몇 시예요?',pronunciation:'슈덴와 난지데스카'},
+      {japanese:'ここで降りていいですか',reading:'ここでおりていいですか',korean:'여기서 내려도 되나요?',pronunciation:'코코데 오리테 이이데스카'},
+    ]},
+  { keys:['쇼핑','구매','옷','사다','백화점','가게','마트','슈퍼'], title:'쇼핑할 때',
+    phrases:[
+      {japanese:'これはいくらですか',reading:'これはいくらですか',korean:'이거 얼마예요?',pronunciation:'코레와 이쿠라데스카'},
+      {japanese:'試着してもいいですか',reading:'しちゃくしてもいいですか',korean:'입어봐도 될까요?',pronunciation:'시챠쿠시테모 이이데스카'},
+      {japanese:'Mサイズはありますか',reading:'Mサイズはありますか',korean:'M사이즈 있나요?',pronunciation:'에무 사이즈와 아리마스카'},
+      {japanese:'他の色はありますか',reading:'ほかのいろはありますか',korean:'다른 색상은 있나요?',pronunciation:'호카노 이로와 아리마스카'},
+      {japanese:'袋に入れてください',reading:'ふくろにいれてください',korean:'봉투에 넣어 주세요',pronunciation:'후쿠로니 이레테 쿠다사이'},
+      {japanese:'返品できますか',reading:'へんぴんできますか',korean:'반품할 수 있나요?',pronunciation:'헨핀 데키마스카'},
+    ]},
+  { keys:['약국','약','두통','아프','감기','열','머리'], title:'약국에서 약 살 때',
+    phrases:[
+      {japanese:'頭痛薬はありますか',reading:'ずつうぐすりはありますか',korean:'두통약 있나요?',pronunciation:'즈츠우구스리와 아리마스카'},
+      {japanese:'胃が痛いです',reading:'いがいたいです',korean:'배가 아파요',pronunciation:'이가 이타이데스'},
+      {japanese:'熱があります',reading:'ねつがあります',korean:'열이 있어요',pronunciation:'네츠가 아리마스'},
+      {japanese:'アレルギーがあります',reading:'アレルギーがあります',korean:'알레르기가 있어요',pronunciation:'아레루기-가 아리마스'},
+      {japanese:'これを一日三回飲んでください',reading:'これをいちにちさんかいのんでください',korean:'이걸 하루 세 번 드세요',pronunciation:'코레오 이치니치 산카이 논데 쿠다사이'},
+      {japanese:'風邪薬をください',reading:'かぜぐすりをください',korean:'감기약 주세요',pronunciation:'카제구스리오 쿠다사이'},
+    ]},
+  { keys:['공항','비행기','탑승','출국','입국','짐','수화물','면세'], title:'공항에서',
+    phrases:[
+      {japanese:'チェックインカウンターはどこですか',reading:'チェックインカウンターはどこですか',korean:'체크인 카운터 어디에 있나요?',pronunciation:'체크인 카운타-와 도코데스카'},
+      {japanese:'窓側の席をお願いします',reading:'まどがわのせきをおねがいします',korean:'창문 쪽 좌석 부탁해요',pronunciation:'마도가와노 세키오 오네가이시마스'},
+      {japanese:'搭乗口はどこですか',reading:'とうじょうぐちはどこですか',korean:'탑승구가 어디예요?',pronunciation:'토죠구치와 도코데스카'},
+      {japanese:'フライトが遅れています',reading:'フライトがおくれています',korean:'비행기가 지연되고 있어요',pronunciation:'후라이토가 오쿠레테 이마스'},
+      {japanese:'免税店はどこですか',reading:'めんぜいてんはどこですか',korean:'면세점은 어디에 있나요?',pronunciation:'멘제이텐와 도코데스카'},
+      {japanese:'パスポートを見せてください',reading:'パスポートをみせてください',korean:'여권을 보여주세요',pronunciation:'파스포-토오 미세테 쿠다사이'},
+    ]},
+  { keys:['카페','커피','음료','마시','차','주스','카페라테'], title:'카페에서 주문할 때',
+    phrases:[
+      {japanese:'アイスコーヒーをひとつください',reading:'アイスコーヒーをひとつください',korean:'아이스 커피 한 잔 주세요',pronunciation:'아이스코-히-오 히토츠 쿠다사이'},
+      {japanese:'テイクアウトでお願いします',reading:'テイクアウトでおねがいします',korean:'테이크아웃으로 부탁해요',pronunciation:'테이쿠아우토데 오네가이시마스'},
+      {japanese:'砂糖は少なめでお願いします',reading:'さとうはすくなめでおねがいします',korean:'설탕은 적게 넣어 주세요',pronunciation:'사토우와 스쿠나메데 오네가이시마스'},
+      {japanese:'コンセントは使えますか',reading:'コンセントはつかえますか',korean:'콘센트 사용할 수 있나요?',pronunciation:'콘센토와 츠카에마스카'},
+      {japanese:'Wi-Fiはありますか',reading:'Wi-Fiはありますか',korean:'와이파이 있나요?',pronunciation:'와이파이와 아리마스카'},
+      {japanese:'ここで飲んでいいですか',reading:'ここでのんでいいですか',korean:'여기서 마셔도 될까요?',pronunciation:'코코데 논데 이이데스카'},
+    ]},
+  { keys:['관광','여행','사진','찍','명소','구경','관람','입장'], title:'관광지에서',
+    phrases:[
+      {japanese:'写真を撮ってもいいですか',reading:'しゃしんをとってもいいですか',korean:'사진 찍어도 될까요?',pronunciation:'샤신오 톳테모 이이데스카'},
+      {japanese:'一緒に写真を撮ってください',reading:'いっしょにしゃしんをとってください',korean:'같이 사진 찍어 주세요',pronunciation:'잇쇼니 샤신오 톳테 쿠다사이'},
+      {japanese:'入場料はいくらですか',reading:'にゅうじょうりょうはいくらですか',korean:'입장료는 얼마예요?',pronunciation:'뉴죠료-와 이쿠라데스카'},
+      {japanese:'何時まで開いていますか',reading:'なんじまであいていますか',korean:'몇 시까지 열어요?',pronunciation:'난지마데 아이테 이마스카'},
+      {japanese:'音声ガイドはありますか',reading:'おんせいガイドはありますか',korean:'음성 가이드 있나요?',pronunciation:'온세이 가이도와 아리마스카'},
+      {japanese:'トイレはどこですか',reading:'トイレはどこですか',korean:'화장실은 어디예요?',pronunciation:'토이레와 도코데스카'},
+    ]},
+  { keys:['병원','의사','진료','아프','다쳐','응급','통증'], title:'병원에서',
+    phrases:[
+      {japanese:'具合が悪いです',reading:'ぐあいがわるいです',korean:'몸이 안 좋아요',pronunciation:'구아이가 와루이데스'},
+      {japanese:'ここが痛いです',reading:'ここがいたいです',korean:'여기가 아파요',pronunciation:'코코가 이타이데스'},
+      {japanese:'救急車を呼んでください',reading:'きゅうきゅうしゃをよんでください',korean:'구급차를 불러주세요',pronunciation:'큐큐샤오 욘데 쿠다사이'},
+      {japanese:'保険証を見せてください',reading:'ほけんしょうをみせてください',korean:'보험증을 보여주세요',pronunciation:'호켄쇼오 미세테 쿠다사이'},
+      {japanese:'いつから痛いですか',reading:'いつからいたいですか',korean:'언제부터 아팠나요?',pronunciation:'이츠카라 이타이데스카'},
+      {japanese:'薬を処方してください',reading:'くすりをしょほうしてください',korean:'약을 처방해 주세요',pronunciation:'쿠스리오 쇼호시테 쿠다사이'},
+    ]},
+  { keys:['인사','소개','처음','만나','반갑','좋아','이름'], title:'기본 인사와 자기소개',
+    phrases:[
+      {japanese:'はじめまして',reading:'はじめまして',korean:'처음 뵙겠습니다',pronunciation:'하지메마시테'},
+      {japanese:'よろしくお願いします',reading:'よろしくおねがいします',korean:'잘 부탁드립니다',pronunciation:'요로시쿠 오네가이시마스'},
+      {japanese:'私は韓国から来ました',reading:'わたしはかんこくからきました',korean:'저는 한국에서 왔어요',pronunciation:'와타시와 칸코쿠카라 키마시타'},
+      {japanese:'日本語が少しわかります',reading:'にほんごがすこしわかります',korean:'일본어를 조금 알아요',pronunciation:'니혼고가 스코시 와카리마스'},
+      {japanese:'ゆっくり話してください',reading:'ゆっくりはなしてください',korean:'천천히 말해 주세요',pronunciation:'윳쿠리 하나시테 쿠다사이'},
+      {japanese:'もう一度お願いします',reading:'もういちどおねがいします',korean:'한 번 더 부탁드려요',pronunciation:'모우이치도 오네가이시마스'},
+    ]},
+];
+
+/* ── 상황 키워드 매칭 ── */
+function findSituationPhrases(input){
+  const q = input.toLowerCase();
+  let best=null, bestScore=0;
+  SITUATION_DB.forEach(s=>{
+    const score = s.keys.filter(k=>q.includes(k)).length;
+    if(score>bestScore){ bestScore=score; best=s; }
+  });
+  return bestScore>0 ? best : null;
+}
 
 function setAISituation(text){
   const inp = document.getElementById('ai-input');
@@ -1249,62 +1372,58 @@ async function askAI(){
   const resultEl = document.getElementById('ai-result');
   const sendBtn  = document.getElementById('ai-send-btn');
   sendBtn.disabled = true;
-  resultEl.innerHTML = `<div class="ai-loading"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><br><br>AI가 표현을 만들고 있어요...</div>`;
+  resultEl.innerHTML = `<div class="ai-loading"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><br><br>표현을 찾고 있어요...</div>`;
 
+  // 1차: Gemini API 시도
   try {
     const phrases = await callGemini(situation);
-    renderAIResult(situation, phrases);
-    addXP(5);
-    showToast('표현 생성 완료! +5XP ✨');
-  } catch(e) {
-    resultEl.innerHTML = `<div class="ai-error">⚠️ 오류가 발생했어요<br><small>${e.message}</small><br><small style="opacity:.7">인터넷 연결 또는 API 키를 확인해주세요.</small></div>`;
-  } finally {
-    sendBtn.disabled = false;
+    renderAIResult(situation, phrases, false);
+    addXP(5); showToast('AI 표현 생성 완료! +5XP ✨');
+    sendBtn.disabled = false; return;
+  } catch(e){ /* API 실패 → 오프라인 DB로 폴백 */ }
+
+  // 2차: 내장 DB 키워드 매칭
+  const match = findSituationPhrases(situation);
+  if(match){
+    renderAIResult(match.title, match.phrases, true);
+    addXP(3); showToast('표현 검색 완료! +3XP 📚');
+  } else {
+    // 3차: 매칭 실패 → 상황 목록 제안
+    resultEl.innerHTML = `
+      <div class="ai-error" style="background:rgba(255,183,77,.08);border-color:rgba(255,183,77,.3);color:rgba(255,255,255,.85);text-align:left">
+        <div style="margin-bottom:12px;font-size:.9rem">💡 비슷한 상황을 찾지 못했어요. 아래에서 선택해보세요:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${SITUATION_DB.map(s=>`<button class="ai-ex-btn" onclick="setAISituation('${s.title}');askAI()">${s.title}</button>`).join('')}
+        </div>
+      </div>`;
   }
+  sendBtn.disabled = false;
 }
 
 async function callGemini(situation){
-  const prompt = `당신은 친절한 일본어 선생님입니다. 아래 상황에서 실제로 자주 쓰는 일본어 표현 6개를 알려주세요.
-
-상황: ${situation}
-
-반드시 아래 JSON 배열 형식으로만 답하세요. 설명, 마크다운 코드블록 등 다른 텍스트는 절대 포함하지 마세요.
-[
-  {"japanese":"일본어 문장","reading":"히라가나 독음","korean":"자연스러운 한국어 번역","pronunciation":"한국어 발음 표기"}
-]
-
-규칙:
-- japanese: 실제 일본어 (한자+가나 혼합 OK)
-- reading: 히라가나로만 표기
-- korean: 자연스럽고 실용적인 한국어 번역
-- pronunciation: 한국어로 발음 표기 (예: 스미마셍, 아리가토고자이마스)`;
-
+  const prompt = `당신은 친절한 일본어 선생님입니다. 아래 상황에서 실제로 자주 쓰는 일본어 표현 6개를 알려주세요.\n\n상황: ${situation}\n\n반드시 아래 JSON 배열 형식으로만 답하세요. 다른 텍스트는 절대 포함하지 마세요.\n[{"japanese":"일본어","reading":"히라가나 독음","korean":"한국어 번역","pronunciation":"한국어 발음"}]`;
   const res = await fetch(GEMINI_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
   });
-
-  if(!res.ok){
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err?.error?.message || 'HTTP ' + res.status);
-  }
-
+  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+res.status); }
   const data = await res.json();
-  const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-  const match = text.match(/\[[\s\S]*\]/);
-  if(!match) throw new Error('AI 응답을 파싱할 수 없어요. 다시 시도해주세요.');
-  let parsed;
-  try { parsed = JSON.parse(match[0]); } catch(e){ throw new Error('JSON 파싱 실패. 다시 시도해주세요.'); }
-  if(!Array.isArray(parsed)||!parsed.length) throw new Error('표현 목록이 비어있어요. 다시 시도해주세요.');
+  const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+  const m = text.match(/\[[\s\S]*\]/);
+  if(!m) throw new Error('파싱 실패');
+  const parsed = JSON.parse(m[0]);
+  if(!Array.isArray(parsed)||!parsed.length) throw new Error('빈 응답');
   return parsed;
 }
 
-function renderAIResult(situation, phrases){
+function renderAIResult(situation, phrases, isOffline){
   const resultEl = document.getElementById('ai-result');
-  const escQ = s => (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const escQ = s=>(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const badge = isOffline
+    ? '<span style="font-size:.68rem;background:rgba(255,183,77,.2);border:1px solid rgba(255,183,77,.4);color:rgba(255,183,77,.9);padding:2px 9px;border-radius:10px;margin-left:8px">📚 저장된 표현</span>'
+    : '<span style="font-size:.68rem;background:rgba(79,195,247,.2);border:1px solid rgba(79,195,247,.4);color:#4fc3f7;padding:2px 9px;border-radius:10px;margin-left:8px">🤖 AI 생성</span>';
   resultEl.innerHTML = `
-    <div class="ai-result-header">📍 상황: ${situation} — ${phrases.length}개 표현</div>
+    <div class="ai-result-header">📍 ${situation}${badge}</div>
     <div class="ai-phrases">
       ${phrases.map((p,i)=>`
         <div class="ai-phrase-card">
