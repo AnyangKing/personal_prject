@@ -255,6 +255,63 @@
     @keyframes aidot{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-6px);opacity:1}}
     .ai-error{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);border-radius:12px;padding:16px;color:#e74c3c;font-size:.88rem;text-align:center;line-height:1.6}
     .ai-result-header{font-size:.82rem;color:rgba(255,255,255,.45);letter-spacing:1px;margin-bottom:14px;padding:0 2px}
+
+    /* ── AI 대화 시뮬레이터 ── */
+    .conv-sit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
+    .conv-sit-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .18s}
+    .conv-sit-card:hover{background:rgba(255,255,255,.2);transform:translateY(-3px);border-color:rgba(79,195,247,.5)}
+    .conv-sit-icon{font-size:2rem;margin-bottom:8px}
+    .conv-sit-title{font-size:.9rem;font-weight:700;margin-bottom:3px}
+    .conv-sit-desc{font-size:.72rem;color:rgba(255,255,255,.45)}
+    .conv-chat-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .conv-back-btn{background:rgba(255,255,255,.15);border:none;color:white;padding:7px 14px;border-radius:20px;cursor:pointer;font-size:.85rem;transition:background .15s}
+    .conv-back-btn:hover{background:rgba(255,255,255,.28)}
+    .conv-sit-badge{background:rgba(79,195,247,.18);border:1px solid rgba(79,195,247,.4);border-radius:20px;padding:4px 14px;font-size:.82rem;color:#4fc3f7}
+    .conv-end-btn{margin-left:auto;background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.35);color:rgba(255,100,100,.85);padding:6px 14px;border-radius:16px;font-size:.8rem;cursor:pointer;transition:all .15s}
+    .conv-end-btn:hover{background:rgba(231,76,60,.25)}
+    .conv-chat-box{background:rgba(0,0,0,.25);border-radius:16px;padding:16px;min-height:300px;max-height:440px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+    .conv-msg{display:flex;gap:9px;align-items:flex-start;max-width:88%}
+    .conv-msg.ai{align-self:flex-start}
+    .conv-msg.user{align-self:flex-end;flex-direction:row-reverse}
+    .conv-msg.hint-msg{align-self:flex-start;max-width:88%}
+    .conv-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;margin-top:2px}
+    .conv-msg.ai .conv-avatar{background:rgba(79,195,247,.15);border:1px solid rgba(79,195,247,.3)}
+    .conv-msg.user .conv-avatar{background:rgba(255,183,77,.15);border:1px solid rgba(255,183,77,.3)}
+    .conv-msg.hint-msg .conv-avatar{background:rgba(129,199,132,.15);border:1px solid rgba(129,199,132,.3)}
+    .conv-bubble{border-radius:14px;padding:11px 15px}
+    .conv-msg.ai .conv-bubble{background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.22)}
+    .conv-msg.user .conv-bubble{background:rgba(255,183,77,.1);border:1px solid rgba(255,183,77,.22)}
+    .conv-msg.hint-msg .conv-bubble{background:rgba(129,199,132,.1);border:1px dashed rgba(129,199,132,.4)}
+    .cm-hint-label{font-size:.68rem;color:#81c784;margin-bottom:5px;letter-spacing:.5px}
+    .cm-jp{font-size:1.2rem;font-weight:700;margin-bottom:3px}
+    .cm-reading{font-size:.76rem;color:#4fc3f7;margin-bottom:3px}
+    .cm-kr{font-size:.8rem;color:rgba(255,255,255,.6)}
+    .cm-speak{background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:.85rem;padding:0 3px;vertical-align:middle;transition:color .15s}
+    .cm-speak:hover{color:white}
+    .conv-user-text{font-size:.92rem;line-height:1.5;color:rgba(255,255,255,.9)}
+    .conv-thinking-bubble{display:flex;gap:5px;align-items:center;padding:4px 0}
+    .conv-dot{width:6px;height:6px;border-radius:50%;background:#4fc3f7;animation:aidot 1.2s infinite}
+    .conv-dot:nth-child(2){animation-delay:.2s}
+    .conv-dot:nth-child(3){animation-delay:.4s}
+    .conv-input-wrap{display:flex;flex-direction:column;gap:8px}
+    .conv-hint-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .conv-hint-btn{background:rgba(129,199,132,.12);border:1px solid rgba(129,199,132,.35);color:rgba(129,199,132,.9);padding:6px 14px;border-radius:16px;font-size:.8rem;cursor:pointer;transition:all .15s}
+    .conv-hint-btn:hover:not(:disabled){background:rgba(129,199,132,.25)}
+    .conv-hint-btn:disabled{opacity:.35;cursor:default}
+    .conv-turns{font-size:.75rem;color:rgba(255,255,255,.35);margin-left:auto}
+    .conv-input-row{display:flex;gap:8px}
+    .conv-input{flex:1;padding:11px 16px;border-radius:12px;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:white;font-size:.92rem;outline:none}
+    .conv-input::placeholder{color:rgba(255,255,255,.28)}
+    .conv-input:focus{border-color:rgba(79,195,247,.6)}
+    .conv-send-btn{background:linear-gradient(135deg,#29b6f6,#0288d1);border:none;color:white;padding:11px 20px;border-radius:12px;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;box-shadow:0 3px 10px rgba(41,182,246,.25)}
+    .conv-send-btn:hover:not(:disabled){transform:scale(1.04)}
+    .conv-send-btn:disabled{opacity:.45;cursor:default;transform:none}
+    .conv-summary{text-align:center;padding:30px 20px}
+    .conv-summary-emoji{font-size:3rem;margin-bottom:12px}
+    .conv-summary h3{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+    .conv-summary p{font-size:.88rem;color:rgba(255,255,255,.55);margin-bottom:20px}
+    .conv-restart-btn{background:white;color:#1a3a6b;border:none;padding:11px 28px;border-radius:24px;font-size:.9rem;font-weight:700;cursor:pointer;transition:transform .15s}
+    .conv-restart-btn:hover{transform:scale(1.05)}
   </style>
 </head>
 <body>
@@ -275,7 +332,8 @@
     <button id="btn-quiz"     onclick="showPage('quiz')">퀴즈</button>
     <button id="btn-stats"    onclick="showPage('stats')">통계</button>
     <button id="btn-learn"    onclick="showPage('learn')">단계별 학습</button>
-    <button id="btn-ai"       onclick="showPage('ai')" style="border-color:rgba(255,183,77,.6);color:rgba(255,183,77,.9)">🤖 AI 회화</button>
+    <button id="btn-ai"       onclick="showPage('ai')"   style="border-color:rgba(255,183,77,.6);color:rgba(255,183,77,.9)">🤖 AI 회화</button>
+    <button id="btn-conv"     onclick="showPage('conv')" style="border-color:rgba(79,195,247,.6);color:rgba(79,195,247,.9)">💬 대화 연습</button>
   </nav>
 </header>
 
@@ -424,6 +482,34 @@
       </div>
     </div>
     <div id="ai-result"></div>
+  </div>
+
+  <!-- ══ AI 대화 시뮬레이터 ══ -->
+  <div id="page-conv" style="display:none">
+    <p class="section-title">상황을 고르면 AI가 일본인 역할로 실전 대화를 시작해요 🗣️</p>
+    <div id="conv-sit-select">
+      <div class="conv-sit-grid" id="conv-sit-grid"></div>
+    </div>
+    <div id="conv-active" style="display:none">
+      <div class="conv-chat-header">
+        <button class="conv-back-btn" onclick="resetConv()">← 상황 선택</button>
+        <span class="conv-sit-badge" id="conv-sit-badge"></span>
+        <button class="conv-end-btn" onclick="endConv()">대화 종료 ✓</button>
+      </div>
+      <div class="conv-chat-box" id="conv-chat-box"></div>
+      <div class="conv-input-wrap" id="conv-input-wrap">
+        <div class="conv-hint-row">
+          <button class="conv-hint-btn" id="conv-hint-btn" onclick="getConvHint()">💡 뭐라고 해야 할까요?</button>
+          <span class="conv-turns" id="conv-turns">0번 대화</span>
+        </div>
+        <div class="conv-input-row">
+          <input class="conv-input" id="conv-input" type="text"
+            placeholder="일본어 또는 한국어로 입력하세요"
+            onkeydown="if(event.key==='Enter')sendConvMsg()">
+          <button class="conv-send-btn" id="conv-send-btn" onclick="sendConvMsg()">전송 ▶</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1212,7 +1298,7 @@ function showLessonResult(){
 /* ══════════════════════════════════════════════
    페이지 전환
 ══════════════════════════════════════════════ */
-const PAGES=['chart','katakana','compare','quiz','stats','learn','ai'];
+const PAGES=['chart','katakana','compare','quiz','stats','learn','ai','conv'];
 function showPage(page){
   PAGES.forEach(p=>{
     const el=document.getElementById('page-'+p);
@@ -1227,6 +1313,7 @@ function showPage(page){
     renderCurriculum();
   }
   if(page==='stats') renderStats();
+  if(page==='conv')  initConvSituations();
 }
 
 /* ══════════════════════════════════════════════
@@ -1438,6 +1525,203 @@ function renderAIResult(situation, phrases, isOffline){
           <button class="apc-speak-btn" title="발음 듣기" onclick="speak('${escQ(p.japanese)}')">🔊</button>
         </div>`).join('')}
     </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   AI 대화 시뮬레이터
+══════════════════════════════════════════════ */
+const CONV_SITUATIONS = [
+  {id:'restaurant', icon:'🍜', title:'식당',    desc:'주문부터 계산까지',  role:'일본 식당의 친절한 종업원'},
+  {id:'hotel',      icon:'🏨', title:'호텔',    desc:'체크인/아웃, 문의',  role:'호텔 프런트 직원'},
+  {id:'station',    icon:'🚉', title:'전철역',  desc:'표 구매, 환승 문의', role:'전철역 안내 직원'},
+  {id:'convenience',icon:'🏪', title:'편의점',  desc:'쇼핑, 결제, 서비스', role:'편의점 아르바이트 직원'},
+  {id:'shopping',   icon:'🛍️', title:'쇼핑',   desc:'옷가게, 백화점',     role:'쇼핑몰 직원'},
+  {id:'pharmacy',   icon:'💊', title:'약국',    desc:'증상 설명, 약 구매', role:'친절한 약사'},
+  {id:'tourism',    icon:'🗺️', title:'관광안내',desc:'관광지, 길 찾기',   role:'관광 안내소 직원'},
+  {id:'airport',    icon:'✈️', title:'공항',    desc:'탑승 수속, 수화물',  role:'공항 직원'},
+];
+
+let convMessages   = [];
+let convSituation  = null;
+let convThinking   = false;
+let convTurnCount  = 0;
+
+function initConvSituations(){
+  const grid = document.getElementById('conv-sit-grid');
+  if(!grid || grid.children.length > 0) return;
+  grid.innerHTML = CONV_SITUATIONS.map(s=>`
+    <div class="conv-sit-card" onclick="selectConvSituation('${s.id}')">
+      <div class="conv-sit-icon">${s.icon}</div>
+      <div class="conv-sit-title">${s.title}</div>
+      <div class="conv-sit-desc">${s.desc}</div>
+    </div>`).join('');
+}
+
+function getConvSystemPrompt(s){
+  return `당신은 일본 ${s.role}입니다. 일본어를 배우는 한국인 초보자와 실전 대화 연습을 합니다.
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
+{"japanese":"일본어 대사","reading":"히라가나 독음","korean":"한국어 번역"}
+
+규칙:
+- 초보자에 맞게 짧고 자연스러운 일본어 사용
+- 사용자가 한국어로 입력하면 → 일본어로 어떻게 말하면 되는지 알려주고 대화 계속
+- 사용자가 틀린 일본어를 쓰면 → 부드럽게 고쳐주고 대화 계속
+- 한 번에 1~2문장으로 짧게 응답
+- ${s.title} 상황에 맞는 자연스러운 대화 진행`;
+}
+
+async function selectConvSituation(id){
+  convSituation  = CONV_SITUATIONS.find(s=>s.id===id);
+  convMessages   = [];
+  convTurnCount  = 0;
+  document.getElementById('conv-sit-select').style.display = 'none';
+  document.getElementById('conv-active').style.display     = 'block';
+  document.getElementById('conv-input-wrap').style.display = 'flex';
+  document.getElementById('conv-sit-badge').textContent    = convSituation.icon + ' ' + convSituation.title;
+  document.getElementById('conv-chat-box').innerHTML       = '';
+  document.getElementById('conv-turns').textContent        = '0번 대화';
+  checkStreak();
+
+  // AI가 먼저 인사
+  await _callConvAPI(
+    [{role:'system', content: getConvSystemPrompt(convSituation)},
+     {role:'user',   content: `${convSituation.title} 상황을 시작합니다. 고객에게 자연스럽게 첫 인사를 해주세요.`}],
+    'ai'
+  );
+}
+
+async function sendConvMsg(){
+  const inp  = document.getElementById('conv-input');
+  const text = inp.value.trim();
+  if(!text || convThinking) return;
+  inp.value = '';
+
+  // 사용자 메시지 표시
+  _renderConvBubble({text}, 'user');
+  convMessages.push({role:'user', content: text});
+  convTurnCount++;
+  document.getElementById('conv-turns').textContent = convTurnCount + '번 대화';
+
+  // AI 응답
+  const apiMsgs = [{role:'system', content: getConvSystemPrompt(convSituation)}, ...convMessages];
+  const parsed  = await _callConvAPI(apiMsgs, 'ai');
+  if(parsed) convMessages.push({role:'assistant', content: JSON.stringify(parsed)});
+  addXP(2);
+}
+
+async function getConvHint(){
+  if(convThinking) return;
+  const hintInstruction = '이 상황에서 학습자(한국인 초보자)가 다음에 일본어로 어떻게 말하면 좋을지 힌트 예시를 하나 알려주세요.';
+  const apiMsgs = [
+    {role:'system',    content: getConvSystemPrompt(convSituation)},
+    ...convMessages,
+    {role:'user',      content: hintInstruction}
+  ];
+  await _callConvAPI(apiMsgs, 'hint');
+}
+
+async function _callConvAPI(apiMessages, role){
+  convThinking = true;
+  document.getElementById('conv-send-btn').disabled = true;
+  document.getElementById('conv-hint-btn').disabled = true;
+  _showConvThinking();
+
+  try {
+    const res = await fetch(GEMINI_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GEMINI_KEY},
+      body: JSON.stringify({model:GEMINI_MODEL, messages:apiMessages, temperature:0.85})
+    });
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+res.status); }
+    const data = await res.json();
+    const text = (data?.choices?.[0]?.message?.content||'').trim();
+    const m    = text.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('응답 파싱 실패');
+    const parsed = JSON.parse(m[0]);
+    _hideConvThinking();
+    _renderConvBubble(parsed, role);
+    if(role !== 'hint') speak(parsed.japanese);
+    return parsed;
+  } catch(e){
+    _hideConvThinking();
+    showToast('AI 오류: ' + e.message);
+    return null;
+  } finally {
+    convThinking = false;
+    document.getElementById('conv-send-btn').disabled = false;
+    document.getElementById('conv-hint-btn').disabled = false;
+    const inp = document.getElementById('conv-input');
+    if(inp) inp.focus();
+  }
+}
+
+function _renderConvBubble(data, role){
+  const box = document.getElementById('conv-chat-box');
+  const div = document.createElement('div');
+
+  if(role === 'user'){
+    div.className = 'conv-msg user';
+    div.innerHTML = `
+      <div class="conv-avatar">👤</div>
+      <div class="conv-bubble"><div class="conv-user-text">${data.text}</div></div>`;
+  } else if(role === 'hint'){
+    const escJ = (data.japanese||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    div.className = 'conv-msg hint-msg';
+    div.innerHTML = `
+      <div class="conv-avatar">💡</div>
+      <div class="conv-bubble">
+        <div class="cm-hint-label">💡 힌트 — 이렇게 말해보세요</div>
+        <div class="cm-jp">${data.japanese||''} <button class="cm-speak" onclick="speak('${escJ}')">🔊</button></div>
+        <div class="cm-reading">${data.reading||''}</div>
+        <div class="cm-kr">🇰🇷 ${data.korean||''}</div>
+      </div>`;
+  } else {
+    const escJ = (data.japanese||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    div.className = 'conv-msg ai';
+    div.innerHTML = `
+      <div class="conv-avatar">🤖</div>
+      <div class="conv-bubble">
+        <div class="cm-jp">${data.japanese||''} <button class="cm-speak" onclick="speak('${escJ}')">🔊</button></div>
+        <div class="cm-reading">${data.reading||''}</div>
+        <div class="cm-kr">🇰🇷 ${data.korean||''}</div>
+      </div>`;
+  }
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function _showConvThinking(){
+  const box = document.getElementById('conv-chat-box');
+  const div = document.createElement('div');
+  div.id = 'conv-thinking'; div.className = 'conv-msg ai';
+  div.innerHTML = `<div class="conv-avatar">🤖</div>
+    <div class="conv-bubble"><div class="conv-thinking-bubble">
+      <div class="conv-dot"></div><div class="conv-dot"></div><div class="conv-dot"></div>
+    </div></div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function _hideConvThinking(){ const el=document.getElementById('conv-thinking'); if(el) el.remove(); }
+
+function endConv(){
+  const xp = convTurnCount * 3;
+  document.getElementById('conv-chat-box').innerHTML = `
+    <div class="conv-summary">
+      <div class="conv-summary-emoji">🎉</div>
+      <h3>대화 완료!</h3>
+      <p>총 ${convTurnCount}번 대화를 나눴어요<br>+${xp}XP 획득!</p>
+      <button class="conv-restart-btn" onclick="resetConv()">다른 상황 연습하기 →</button>
+    </div>`;
+  document.getElementById('conv-input-wrap').style.display = 'none';
+  addXP(xp);
+  showToast(`대화 완료! +${xp}XP 🎉`);
+}
+
+function resetConv(){
+  convMessages  = []; convSituation = null; convTurnCount = 0;
+  document.getElementById('conv-sit-select').style.display = 'block';
+  document.getElementById('conv-active').style.display     = 'none';
 }
 
 /* ══════════════════════════════════════════════
