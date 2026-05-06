@@ -141,6 +141,7 @@
     .month-badge.m1{background:rgba(79,195,247,.25)}
     .month-badge.m2{background:rgba(129,199,132,.25)}
     .month-badge.m3{background:rgba(255,183,77,.25)}
+    .month-badge.m4{background:rgba(206,147,216,.25);color:#ce93d8}
     .month-title{font-size:.95rem;font-weight:700}
     .month-prog{font-size:.76rem;color:rgba(255,255,255,.5);margin-left:auto}
     .unit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
@@ -256,6 +257,26 @@
     .ai-error{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);border-radius:12px;padding:16px;color:#e74c3c;font-size:.88rem;text-align:center;line-height:1.6}
     .ai-result-header{font-size:.82rem;color:rgba(255,255,255,.45);letter-spacing:1px;margin-bottom:14px;padding:0 2px}
 
+    /* ── 인트로 화면 ── */
+    #intro-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#071428 0%,#0f2548 45%,#1a3a6b 100%);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .55s}
+    #intro-overlay.hidden{opacity:0;pointer-events:none}
+    .intro-inner{text-align:center;max-width:600px;padding:40px 24px;animation:introFadeUp .7s ease}
+    @keyframes introFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .intro-flag{font-size:4.5rem;margin-bottom:16px;display:inline-block;animation:floatFlag 3s ease-in-out infinite}
+    @keyframes floatFlag{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .intro-title{font-size:2.6rem;font-weight:900;margin-bottom:8px;background:linear-gradient(135deg,#ffffff,#4fc3f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2}
+    .intro-sub{font-size:1rem;color:rgba(255,255,255,.55);margin-bottom:32px;letter-spacing:.5px}
+    .intro-features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;text-align:left}
+    .intro-feat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:12px;padding:12px 16px;font-size:.86rem;color:rgba(255,255,255,.82);line-height:1.5}
+    .intro-feat strong{color:#4fc3f7;display:block;margin-bottom:2px;font-size:.78rem;letter-spacing:.5px}
+    .intro-stats{display:flex;gap:12px;justify-content:center;margin-bottom:34px;flex-wrap:wrap}
+    .intro-stat{background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.28);border-radius:14px;padding:12px 18px;text-align:center;min-width:80px}
+    .intro-stat-val{display:block;font-size:1.7rem;font-weight:900;color:#4fc3f7;line-height:1.1}
+    .intro-stat-lbl{font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px}
+    .intro-start-btn{background:linear-gradient(135deg,#4fc3f7,#0288d1);border:none;color:white;padding:16px 52px;border-radius:32px;font-size:1.1rem;font-weight:800;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 28px rgba(79,195,247,.4);margin-bottom:14px;letter-spacing:.5px}
+    .intro-start-btn:hover{transform:scale(1.06);box-shadow:0 8px 36px rgba(79,195,247,.55)}
+    .intro-credit{font-size:.72rem;color:rgba(255,255,255,.25)}
+
     /* ── AI 대화 시뮬레이터 ── */
     .conv-sit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
     .conv-sit-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .18s}
@@ -315,6 +336,29 @@
   </style>
 </head>
 <body>
+
+<!-- ══ 인트로 화면 ══ -->
+<div id="intro-overlay">
+  <div class="intro-inner">
+    <div class="intro-flag">🇯🇵</div>
+    <h1 class="intro-title">일본어 마스터 AI</h1>
+    <p class="intro-sub">AI와 함께하는 스마트 일본어 학습 플랫폼</p>
+    <div class="intro-features">
+      <div class="intro-feat"><strong>📖 문자 완전 정복</strong>히라가나·가타카나·탁음·요음 전체 학습 + 클릭하면 발음 즉시 재생</div>
+      <div class="intro-feat"><strong>🎮 게임형 퀴즈 시스템</strong>객관식·타이핑·AI 맞춤 복습 3가지 모드 + XP/레벨 성장</div>
+      <div class="intro-feat"><strong>🤖 AI 회화 표현 생성</strong>상황을 입력하면 Gemini AI가 실시간으로 일본어 표현 제안</div>
+      <div class="intro-feat"><strong>💬 AI 대화 시뮬레이터</strong>식당·호텔·공항 등 8가지 상황에서 AI 원어민과 실전 대화</div>
+    </div>
+    <div class="intro-stats">
+      <div class="intro-stat"><span class="intro-stat-val">36</span><div class="intro-stat-lbl">학습 단원</div></div>
+      <div class="intro-stat"><span class="intro-stat-val">8</span><div class="intro-stat-lbl">대화 상황</div></div>
+      <div class="intro-stat"><span class="intro-stat-val">AI</span><div class="intro-stat-lbl">맞춤 분석</div></div>
+      <div class="intro-stat"><span class="intro-stat-val">🔊</span><div class="intro-stat-lbl">발음 재생</div></div>
+    </div>
+    <button class="intro-start-btn" onclick="startApp()">학습 시작하기 →</button>
+    <p class="intro-credit">Powered by Google Gemini AI · Web Speech API</p>
+  </div>
+</div>
 
 <header>
   <h1>🇯🇵 일본어 마스터 AI</h1>
@@ -673,12 +717,40 @@ const CURRICULUM = [
     {w:'わかりません',r:'와카리마셍',m:'모르겠어요'},{w:'もう一度',r:'모이치도',m:'한 번 더'},
   ]},
   {id:30,month:3,title:'최종\n복습',type:'vocab_review',items:null},
+  {id:31,month:4,title:'が行·ざ行\n탁음①',type:'kana',items:[
+    ['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go'],
+    ['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo'],
+  ]},
+  {id:32,month:4,title:'だ行·ば行\n탁음②',type:'kana',items:[
+    ['だ','da'],['ぢ','ji'],['づ','zu'],['で','de'],['ど','do'],
+    ['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo'],
+  ]},
+  {id:33,month:4,title:'ぱ行\n반탁음',type:'kana',items:[
+    ['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po'],
+  ]},
+  {id:34,month:4,title:'탁음·반탁음\n총복습',type:'daku_review',items:null},
+  {id:35,month:4,title:'きゃ~にゃ\n요음①',type:'kana',items:[
+    ['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],
+    ['しゃ','sha'],['しゅ','shu'],['しょ','sho'],
+    ['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],
+    ['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],
+  ]},
+  {id:36,month:4,title:'ひゃ~ぴゃ\n요음②',type:'kana',items:[
+    ['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo'],
+    ['みゃ','mya'],['みゅ','myu'],['みょ','myo'],
+    ['りゃ','rya'],['りゅ','ryu'],['りょ','ryo'],
+    ['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo'],
+    ['じゃ','ja'],['じゅ','ju'],['じょ','jo'],
+    ['びゃ','bya'],['びゅ','byu'],['びょ','byo'],
+    ['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo'],
+  ]},
 ];
 
 const MONTH_INFO = {
   1:{label:'1단계',title:'히라가나 마스터',badge:'m1',desc:'일본어의 기초! 히라가나 46자를 정복해요.'},
   2:{label:'2단계',title:'가타카나 마스터',badge:'m2',desc:'외래어 표기에 쓰는 가타카나를 배워요.'},
   3:{label:'3단계',title:'기초 단어·문장',badge:'m3',desc:'일상에서 쓰는 단어와 표현을 익혀요.'},
+  4:{label:'4단계',title:'탁음·요음 마스터',badge:'m4',desc:'탁음·반탁음·요음으로 일본어를 완성해요!'},
 };
 
 /* ══════════════════════════════════════════════
@@ -757,6 +829,9 @@ function getReviewItems(unit){
   }
   if(unit.type==='vocab_review'){
     return CURRICULUM.filter(u=>u.month===3&&u.type==='vocab').flatMap(u=>u.items);
+  }
+  if(unit.type==='daku_review'){
+    return DAKUTEN_HIRA.flatMap(r=>r.items.filter(Boolean));
   }
   return unit.items;
 }
@@ -1067,13 +1142,13 @@ let lqIndex=0,lqAnswered=false,lqScore=0,lqLog=[],lqCurrentItem=null;
 function saveProgress(){localStorage.setItem('completed_units',JSON.stringify([...completedUnits]));}
 
 function renderCurriculum(){
-  const done=completedUnits.size,total=30;
+  const done=completedUnits.size,total=36;
   const pct=Math.round(done/total*100);
   document.getElementById('op-fill').style.width=pct+'%';
   document.getElementById('op-text').textContent=done+' / '+total+' 단원 완료 ('+pct+'%)';
   const container=document.getElementById('curriculum-list');
   container.innerHTML='';
-  [1,2,3].forEach(month=>{
+  [1,2,3,4].forEach(month=>{
     const info=MONTH_INFO[month];
     const units=CURRICULUM.filter(u=>u.month===month);
     const mdone=units.filter(u=>completedUnits.has(u.id)).length;
@@ -1722,6 +1797,15 @@ function resetConv(){
   convMessages  = []; convSituation = null; convTurnCount = 0;
   document.getElementById('conv-sit-select').style.display = 'block';
   document.getElementById('conv-active').style.display     = 'none';
+}
+
+/* ══════════════════════════════════════════════
+   인트로 화면
+══════════════════════════════════════════════ */
+function startApp(){
+  const overlay = document.getElementById('intro-overlay');
+  overlay.classList.add('hidden');
+  setTimeout(()=>{ overlay.style.display='none'; }, 560);
 }
 
 /* ══════════════════════════════════════════════
