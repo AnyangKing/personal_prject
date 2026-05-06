@@ -247,6 +247,7 @@
     .apc-jp{font-size:1.45rem;font-weight:700;margin-bottom:4px}
     .apc-reading{font-size:.82rem;color:#f39c12;margin-bottom:4px}
     .apc-kr{font-size:.88rem;color:rgba(255,255,255,.65)}
+    .apc-tip{font-size:.78rem;color:rgba(100,210,255,.75);margin-top:5px;padding:4px 8px;background:rgba(100,210,255,.07);border-left:2px solid rgba(100,210,255,.35);border-radius:0 4px 4px 0}
     .apc-speak-btn{background:rgba(255,183,77,.15);border:1px solid rgba(255,183,77,.4);color:rgba(255,183,77,.9);width:40px;height:40px;border-radius:50%;font-size:1.05rem;cursor:pointer;flex-shrink:0;transition:all .15s}
     .apc-speak-btn:hover{background:rgba(255,183,77,.3);transform:scale(1.1)}
     .ai-loading{text-align:center;padding:36px;color:rgba(255,255,255,.45);font-size:.95rem}
@@ -1395,8 +1396,39 @@ function showPage(page){
    AI 회화 — 오프라인 상황 DB + Gemini 연동
 ══════════════════════════════════════════════ */
 const GEMINI_KEY = 'AIzaSyB3AxzlwPkygKBUg_qXsp1Mdd1zB-ga4Yk';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-2.5-pro';
+
+/* 네이티브 Gemini API 헬퍼 */
+async function _geminiRequest(systemPrompt, userPrompt, temperature = 0.75){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    generationConfig: { temperature, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+  };
+  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || 'HTTP ' + res.status); }
+  const data = await res.json();
+  return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+}
+
+/* 대화용 — 멀티턴 메시지를 네이티브 형식으로 변환 */
+async function _geminiConvRequest(systemPrompt, messages, temperature = 0.85){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  // OpenAI messages → Gemini contents (user/model 교대)
+  const contents = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents,
+    generationConfig: { temperature, maxOutputTokens: 512, responseMimeType: 'application/json' }
+  };
+  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || 'HTTP ' + res.status); }
+  const data = await res.json();
+  return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+}
 
 /* ── 내장 상황별 표현 데이터베이스 ── */
 const SITUATION_DB = [
@@ -1564,15 +1596,29 @@ async function askAI(){
 }
 
 async function callGemini(situation){
-  const prompt = `당신은 친절한 일본어 선생님입니다. 아래 상황에서 실제로 자주 쓰는 일본어 표현 6개를 알려주세요.\n\n상황: ${situation}\n\n반드시 아래 JSON 배열 형식으로만 답하세요. 다른 텍스트는 절대 포함하지 마세요.\n[{"japanese":"일본어","reading":"히라가나 독음","korean":"한국어 번역","pronunciation":"한국어 발음"}]`;
-  const res = await fetch(GEMINI_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+GEMINI_KEY},
-    body:JSON.stringify({model:GEMINI_MODEL, messages:[{role:'user',content:prompt}], temperature:0.7})
-  });
-  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+res.status); }
-  const data = await res.json();
-  const text = (data?.choices?.[0]?.message?.content||'').trim();
+  const systemPrompt = `당신은 10년 경력의 일본어 전문 강사입니다. 한국인 학습자가 일본 여행·생활에서 실제로 쓸 수 있는 자연스러운 일본어 표현을 가르쳐 주세요.
+
+응답은 반드시 아래 JSON 배열 형식만 출력하세요. 추가 설명 텍스트는 절대 포함하지 마세요.
+[
+  {
+    "japanese": "실제 일본어 표현 (한자+히라가나 혼용, 자연스러운 구어체)",
+    "reading": "전체 히라가나 독음",
+    "korean": "자연스러운 한국어 번역",
+    "pronunciation": "한국어 발음 표기",
+    "tip": "이 표현의 사용 팁 또는 주의점 (한 문장)"
+  }
+]
+
+조건:
+- 반드시 6개의 표현 생성
+- 초급~중급 수준으로 실용적인 표현 우선
+- 격식체(~ます/~です)와 구어체를 적절히 혼합
+- 원어민이 실제로 자주 사용하는 표현 위주
+- tip은 간단하고 실용적으로`;
+
+  const userPrompt = `상황: ${situation}\n\n이 상황에서 한국인 여행자/학습자에게 꼭 필요한 일본어 표현 6개를 알려주세요.`;
+
+  const text = await _geminiRequest(systemPrompt, userPrompt, 0.7);
   const m = text.match(/\[[\s\S]*\]/);
   if(!m) throw new Error('파싱 실패');
   const parsed = JSON.parse(m[0]);
@@ -1596,6 +1642,7 @@ function renderAIResult(situation, phrases, isOffline){
             <div class="apc-jp">${p.japanese||''}</div>
             <div class="apc-reading">${p.reading||''}</div>
             <div class="apc-kr">🇰🇷 ${p.korean||''} &nbsp;·&nbsp; 🗣 ${p.pronunciation||''}</div>
+            ${p.tip ? `<div class="apc-tip">💡 ${p.tip}</div>` : ''}
           </div>
           <button class="apc-speak-btn" title="발음 듣기" onclick="speak('${escQ(p.japanese)}')">🔊</button>
         </div>`).join('')}
@@ -1633,17 +1680,21 @@ function initConvSituations(){
 }
 
 function getConvSystemPrompt(s){
-  return `당신은 일본 ${s.role}입니다. 일본어를 배우는 한국인 초보자와 실전 대화 연습을 합니다.
+  return `당신은 일본 ${s.role}입니다. 일본어를 배우는 한국인 학습자와 실전 일본어 대화 연습을 진행합니다.
 
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
-{"japanese":"일본어 대사","reading":"히라가나 독음","korean":"한국어 번역"}
+【응답 형식】
+반드시 아래 JSON 객체 하나만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.
+{"japanese":"일본어 대사","reading":"전체 히라가나 독음","korean":"자연스러운 한국어 번역"}
 
-규칙:
-- 초보자에 맞게 짧고 자연스러운 일본어 사용
-- 사용자가 한국어로 입력하면 → 일본어로 어떻게 말하면 되는지 알려주고 대화 계속
-- 사용자가 틀린 일본어를 쓰면 → 부드럽게 고쳐주고 대화 계속
-- 한 번에 1~2문장으로 짧게 응답
-- ${s.title} 상황에 맞는 자연스러운 대화 진행`;
+【대화 규칙】
+1. ${s.title} 상황에 완전히 몰입하여 실제 ${s.role}처럼 자연스럽게 행동하세요.
+2. 응답은 항상 1~2문장으로 짧고 명확하게 유지하세요.
+3. 초·중급 학습자 수준에 맞는 어휘와 문형을 사용하세요 (너무 어렵거나 너무 쉽지 않게).
+4. 사용자가 한국어로 입력하면: 그 내용을 일본어로 어떻게 말하면 되는지 예시를 보여주며 대화를 자연스럽게 이어가세요.
+5. 사용자가 문법/어휘를 틀리면: 틀린 부분을 부드럽게 한 번 교정해주고 대화를 계속 진행하세요.
+6. 사용자가 올바른 일본어를 쓰면: 짧게 칭찬하고 상황을 진전시켜 대화를 이어가세요.
+7. 질문이나 제안으로 마무리하여 학습자가 다음 말을 이어갈 수 있도록 유도하세요.
+8. 절대 역할에서 벗어나거나 메타적 해설을 하지 마세요.`;
 }
 
 async function selectConvSituation(id){
@@ -1703,15 +1754,12 @@ async function _callConvAPI(apiMessages, role){
   _showConvThinking();
 
   try {
-    const res = await fetch(GEMINI_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GEMINI_KEY},
-      body: JSON.stringify({model:GEMINI_MODEL, messages:apiMessages, temperature:0.85})
-    });
-    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+res.status); }
-    const data = await res.json();
-    const text = (data?.choices?.[0]?.message?.content||'').trim();
-    const m    = text.match(/\{[\s\S]*\}/);
+    // system 메시지 분리 → systemInstruction으로 전달
+    const sysMsg  = apiMessages.find(m => m.role === 'system');
+    const systemP = sysMsg ? sysMsg.content : getConvSystemPrompt(convSituation);
+    const text = await _geminiConvRequest(systemP, apiMessages, 0.85);
+
+    const m = text.match(/\{[\s\S]*\}/);
     if(!m) throw new Error('응답 파싱 실패');
     const parsed = JSON.parse(m[0]);
     _hideConvThinking();
