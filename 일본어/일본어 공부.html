@@ -105,7 +105,7 @@
     .month-badge.m1 { background: rgba(79,195,247,0.25); }
     .month-badge.m2 { background: rgba(129,199,132,0.25); }
     .month-badge.m3 { background: rgba(255,183,77,0.25); }
-    .month-badge.m4 { background: rgba(206,147,216,0.25); }
+    .month-badge.m4 { background: rgba(206,147,216,0.25); color: #ce93d8; }
     .month-title { font-size: 1rem; font-weight: 700; }
     .month-prog { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-left: auto; }
 
@@ -231,9 +231,13 @@
     .kana-cell.yoon:hover { background: rgba(129,199,132,0.25); }
 
     /* ── 퀴즈 모드 선택 ── */
-    .quiz-mode-wrap { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+    .quiz-mode-wrap { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
     .quiz-mode-btn { padding: 7px 22px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.3); background: transparent; color: rgba(255,255,255,0.55); cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; }
     .quiz-mode-btn.active { background: white; color: #1a3a6b; border-color: white; }
+    /* ── 퀴즈 범위 선택 ── */
+    .quiz-range-wrap { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .quiz-range-btn { padding: 5px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: rgba(255,255,255,0.45); cursor: pointer; font-size: 0.78rem; transition: all 0.2s; }
+    .quiz-range-btn.active { background: rgba(79,195,247,0.25); border-color: rgba(79,195,247,0.6); color: #4fc3f7; }
 
     /* ── 타이핑 입력 ── */
     .typing-area { text-align: center; margin-bottom: 16px; }
@@ -308,6 +312,12 @@
           <button class="quiz-mode-btn active" id="mode-choice" onclick="setQuizMode('choice')">객관식</button>
           <button class="quiz-mode-btn"        id="mode-typing" onclick="setQuizMode('typing')">타이핑</button>
         </div>
+        <!-- 범위 선택 -->
+        <div class="quiz-range-wrap">
+          <button class="quiz-range-btn active" id="range-basic"  onclick="setQuizRange('basic')">기본 히라가나</button>
+          <button class="quiz-range-btn"        id="range-daku"   onclick="setQuizRange('daku')">+탁음·반탁음</button>
+          <button class="quiz-range-btn"        id="range-all"    onclick="setQuizRange('all')">전체 (탁음+요음)</button>
+        </div>
 
         <div class="quiz-box" id="quiz-box">
           <div class="quiz-label">가나 퀴즈</div>
@@ -356,7 +366,7 @@
       <div class="overall-progress">
         <h3>전체 진행률</h3>
         <div class="op-track"><div class="op-fill" id="op-fill" style="width:0%"></div></div>
-        <div class="op-text" id="op-text">0 / 30 단원 완료</div>
+        <div class="op-text" id="op-text">0 / 36 단원 완료</div>
       </div>
       <div id="curriculum-list"></div>
     </div>
@@ -423,6 +433,9 @@ const HIRAGANA = [
   ['ん','n'],null,null,null,null,
 ];
 const KANA_LIST = HIRAGANA.filter(Boolean);
+const DAKU_LIST = DAKUTEN_HIRA.flatMap(r => r.items);
+const YOON_LIST = YOON_HIRA.flatMap(r => r.items);
+const ALL_KANA  = [...KANA_LIST, ...DAKU_LIST, ...YOON_LIST];
 
 const DAKUTEN_HIRA = [
   { label:'が행', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go']] },
@@ -558,10 +571,10 @@ const CURRICULUM = [
 
   // ── 4단계: 탁음·반탁음·요음 ──
   {id:31, month:4, title:'が행·ざ행\n탁음①', type:'kana', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go'],['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo']]},
-  {id:32, month:4, title:'だ행·ば행\n탁음②', type:'kana', items:[['だ','da'],['で','de'],['ど','do'],['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']]},
+  {id:32, month:4, title:'だ행·ば행\n탁음②', type:'kana', items:[['だ','da'],['ぢ','ji'],['づ','zu'],['で','de'],['ど','do'],['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']]},
   {id:33, month:4, title:'ぱ행\n반탁음',  type:'kana', items:[['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']]},
   {id:34, month:4, title:'탁음·반탁음\n총복습', type:'daku_review', items:null},
-  {id:35, month:4, title:'きゃ~りゃ\n요음①', type:'kana', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],['しゃ','sha'],['しゅ','shu'],['しょ','sho'],['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],['ひゃ','hya'],['みゃ','mya'],['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']]},
+  {id:35, month:4, title:'きゃ~りゃ\n요음①', type:'kana', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],['しゃ','sha'],['しゅ','shu'],['しょ','sho'],['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo'],['みゃ','mya'],['みゅ','myu'],['みょ','myo'],['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']]},
   {id:36, month:4, title:'ぎゃ~ぴゃ\n요음②', type:'kana', items:[['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo'],['じゃ','ja'],['じゅ','ju'],['じょ','jo'],['びゃ','bya'],['びゅ','byu'],['びょ','byo'],['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']]},
 ];
 
@@ -675,13 +688,28 @@ function speak(text) {
 ═══════════════════════════════════════════ */
 const QUIZ_SIZE = 10;
 let qIndex=0, qAnswered=false, currentKana=null, sessionLog=[];
-let quizMode = 'choice'; // 'choice' | 'typing'
+let quizMode  = 'choice'; // 'choice' | 'typing'
+let quizRange = 'basic';  // 'basic' | 'daku' | 'all'
 let history = JSON.parse(localStorage.getItem('kana_history')||'[]');
+
+function getQuizPool() {
+  if (quizRange === 'daku') return [...KANA_LIST, ...DAKU_LIST];
+  if (quizRange === 'all')  return ALL_KANA;
+  return KANA_LIST;
+}
 
 function setQuizMode(mode) {
   quizMode = mode;
   document.getElementById('mode-choice').classList.toggle('active', mode==='choice');
   document.getElementById('mode-typing').classList.toggle('active', mode==='typing');
+  startQuiz();
+}
+
+function setQuizRange(range) {
+  quizRange = range;
+  ['basic','daku','all'].forEach(r => {
+    document.getElementById('range-'+r).classList.toggle('active', r===range);
+  });
   startQuiz();
 }
 
@@ -699,13 +727,14 @@ function nextQuestion() {
   document.getElementById('next-btn').style.display='none';
   document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
   document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
-  currentKana = KANA_LIST[Math.floor(Math.random()*KANA_LIST.length)];
+  const pool = getQuizPool();
+  currentKana = pool[Math.floor(Math.random()*pool.length)];
   document.getElementById('quiz-kana').textContent=currentKana[0];
 
   if (quizMode === 'choice') {
     document.getElementById('choices').style.display='grid';
     document.getElementById('typing-area').style.display='none';
-    const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==currentKana[1])).slice(0,3);
+    const wrong = shuffle(pool.filter(k=>k[1]!==currentKana[1])).slice(0,3);
     const box=document.getElementById('choices'); box.innerHTML='';
     shuffle([currentKana,...wrong]).forEach(opt=>{
       const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt[1];
@@ -763,7 +792,8 @@ function clearHistory() {
 function showSessionResult() {
   const correct=sessionLog.filter(l=>l.correct).length;
   const pct=Math.round(correct/QUIZ_SIZE*100);
-  const record={id:Date.now(),date:new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),score:correct,total:QUIZ_SIZE,log:sessionLog.slice()};
+  const rangeLabel = quizRange==='all'?'전체':quizRange==='daku'?'기본+탁음':'기본';
+  const record={id:Date.now(),date:new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),score:correct,total:QUIZ_SIZE,range:rangeLabel,log:sessionLog.slice()};
   history.unshift(record); if(history.length>20) history.pop();
   localStorage.setItem('kana_history',JSON.stringify(history));
   document.getElementById('quiz-box').style.display='none';
@@ -771,7 +801,7 @@ function showSessionResult() {
   const grade=pct===100?'완벽해요! 🏆':pct>=80?'잘했어요! 🎉':pct>=60?'조금만 더! 💪':'더 연습해봐요 📖';
   document.getElementById('rs-title').textContent=grade;
   document.getElementById('rs-score').textContent=`${correct} / ${QUIZ_SIZE}`;
-  document.getElementById('rs-sub').textContent=`정답률 ${pct}%`;
+  document.getElementById('rs-sub').textContent=`정답률 ${pct}% · 범위: ${rangeLabel}`;
   renderDetailList('rs-detail',sessionLog);
   renderHistory();
 }
@@ -792,7 +822,7 @@ function renderHistory() {
     const pct=Math.round(r.score/r.total*100);
     const color=pct>=80?'#2ecc71':pct>=60?'#f39c12':'#e74c3c';
     return `<div class="history-item" onclick="openModal(${i})">
-      <div class="hi-date">${r.date}</div>
+      <div class="hi-date">${r.date}${r.range?` · ${r.range}`:''}</div>
       <div class="hi-score">${r.score}/${r.total} <small style="opacity:.6">(${pct}%)</small></div>
       <div class="hi-bar-wrap"><div class="hi-bar" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
@@ -1004,7 +1034,7 @@ function renderLQ() {
     options = shuffle([lqCurrentItem,...wrong]);
     getLabel = it => it.m;
   } else {
-    const wrong = shuffle(KANA_LIST.filter(k=>k[1]!==lqCurrentItem[1])).slice(0,3);
+    const wrong = shuffle(ALL_KANA.filter(k=>k[1]!==lqCurrentItem[1])).slice(0,3);
     options = shuffle([lqCurrentItem,...wrong]);
     getLabel = it => it[1];
   }
