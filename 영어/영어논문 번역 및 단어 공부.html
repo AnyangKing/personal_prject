@@ -839,7 +839,89 @@ async function fetchDefinitionFallback(word) {
     const data = await res.json();
     if (data.responseStatus === 200) korean = data.responseData.translatedText;
   } catch {}
+  if (isBadKoreanMeaning(korean, word)) korean = await fetchKoreanMeaningFallback(word, { definition, pos, example });
   return { definition, pos, korean, example };
+}
+
+function hasKorean(text) {
+  return /[가-힣]/.test(String(text || ''));
+}
+
+function isBadKoreanMeaning(korean, word) {
+  const value = String(korean || '').trim();
+  if (!value || value === '조회 중...' || value === '—') return true;
+  if (value.toLowerCase() === String(word || '').toLowerCase()) return true;
+  if (!hasKorean(value)) return true;
+  return false;
+}
+
+function cleanKoreanMeaning(korean, word) {
+  const value = String(korean || '').replace(/\s+/g, ' ').trim();
+  if (isBadKoreanMeaning(value, word)) return '';
+  return value.length > 80 ? value.slice(0, 80).trim() : value;
+}
+
+async function fetchKoreanMeaningWithGemini(word, info = {}) {
+  const prompt = `다음 영어 논문 단어의 한국어 뜻만 짧게 반환하세요.
+
+규칙:
+- 반드시 한국어로만 답하세요.
+- 예문, 영어 설명, 문장 번역을 쓰지 마세요.
+- 쉼표로 구분한 뜻 1~3개만 쓰세요.
+- JSON 객체만 반환하세요: {"korean":"한국어 뜻"}
+
+word: ${word}
+part of speech: ${info.pos || ''}
+english definition: ${info.definition || ''}
+example/context: ${info.example || findExampleSentence(word) || ''}`;
+
+  const raw = await callGemini(prompt, 512, true);
+  const match = raw.match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(match ? match[0] : raw);
+  return cleanKoreanMeaning(parsed.korean, word);
+}
+
+async function fetchKoreanMeaningFallback(word, info = {}) {
+  if (hasGeminiKey()) {
+    try {
+      const geminiMeaning = await fetchKoreanMeaningWithGemini(word, info);
+      if (geminiMeaning) return geminiMeaning;
+    } catch {}
+  }
+
+  try {
+    const direct = await callMyMemory(word);
+    const cleaned = cleanKoreanMeaning(direct, word);
+    if (cleaned) return cleaned;
+  } catch {}
+
+  return '뜻 확인 필요';
+}
+
+async function repairBadKoreanMeanings(limit = 30) {
+  const targets = Object.keys(allVocabulary)
+    .filter(word => isBadKoreanMeaning(allVocabulary[word]?.korean, word))
+    .slice(0, limit);
+
+  if (!targets.length) return 0;
+  showToast(`뜻 보정 중... (${targets.length}개)`);
+
+  let fixed = 0;
+  for (const word of targets) {
+    const meaning = await fetchKoreanMeaningFallback(word, allVocabulary[word]);
+    allVocabulary[word].korean = meaning;
+    fixed++;
+    if (fixed % 5 === 0) {
+      localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
+      renderVocabulary();
+      await sleep(120);
+    }
+  }
+
+  localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
+  renderVocabulary();
+  showToast(`한국어 뜻 보정 완료 (${fixed}개)`);
+  return fixed;
 }
 
 // ══════════════════════════════════════════════
@@ -854,11 +936,12 @@ async function processVocabulary(fullText) {
 
       for (const item of items) {
         const word = item.word.toLowerCase();
+        const korean = cleanKoreanMeaning(item.korean, word);
         if (!allVocabulary[word]) {
           allVocabulary[word] = {
             definition: item.definition || '',
             pos:        item.pos        || '',
-            korean:     item.korean     || '',
+            korean:     korean          || '조회 중...',
             example:    item.example    || '',
             papers:     [state.paperId],
             totalCount: 1,
@@ -870,10 +953,12 @@ async function processVocabulary(fullText) {
           // Update with Claude data if better
           if (!allVocabulary[word].example && item.example) allVocabulary[word].example = item.example;
           if (!allVocabulary[word].definition && item.definition) allVocabulary[word].definition = item.definition;
+          if (isBadKoreanMeaning(allVocabulary[word].korean, word) && korean) allVocabulary[word].korean = korean;
         }
       }
       localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
       renderVocabulary();
+      await repairBadKoreanMeanings(40);
 
       const repeats = state.currentPaperWords.filter(w => (allVocabulary[w]?.papers?.length || 0) > 1).length;
       showToast(`✅ Gemini AI: ${items.length}개 단어 추출 | 재등장 ${repeats}개`);
@@ -907,7 +992,9 @@ async function processVocabulary(fullText) {
 
   // Parallel definition fetches (batches of 5)
   let newCount = 0;
-  const needDef = topWords.filter(({ word }) => !allVocabulary[word].definition || allVocabulary[word].korean === '조회 중...');
+  const needDef = topWords.filter(({ word }) =>
+    !allVocabulary[word].definition || isBadKoreanMeaning(allVocabulary[word].korean, word)
+  );
   for (let i = 0; i < needDef.length; i += 5) {
     const batch = needDef.slice(i, i + 5);
     await Promise.all(batch.map(async ({ word }) => {
@@ -1403,7 +1490,10 @@ function showToast(msg, duration=3000) {
 //  Init
 // ══════════════════════════════════════════════
 document.getElementById('ai-badge').classList.add('visible');
-if (Object.keys(allVocabulary).length > 0) renderVocabulary();
+if (Object.keys(allVocabulary).length > 0) {
+  renderVocabulary();
+  setTimeout(() => repairBadKoreanMeanings(25), 600);
+}
 </script>
 </body>
 </html>
