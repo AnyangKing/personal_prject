@@ -505,12 +505,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const VOCAB_KEY      = 'pv_vocabulary';
 const PAPERS_KEY     = 'pv_papers';
 const KNOWN_KEY      = 'pv_known';
-const GEMINI_KEY     = 'pv_gemini_key';
 const MODEL_KEY      = 'pv_gemini_model';
-const DEFAULT_KEY    = 'AIzaSyBrzt95HI-aEmNlYySeQweERyVwuwvJ3cs';
-
-// 항상 코드의 키를 사용 (localStorage 이전 값 덮어쓰기)
-localStorage.setItem(GEMINI_KEY, DEFAULT_KEY);
+const CLOUD_FUNCTION_URL = 'https://us-central1-gen-lang-client-0468351363.cloudfunctions.net/geminiProxy';
 
 const state = {
   pdf: null, currentPage: 1, totalPages: 0,
@@ -528,7 +524,6 @@ let openFolders   = new Set(Object.keys(allPapers)); // 폴더 열림 상태
 // ══════════════════════════════════════════════
 //  Gemini API
 // ══════════════════════════════════════════════
-const getGeminiKey   = () => localStorage.getItem(GEMINI_KEY) || '';
 const getGeminiModel = () => {
   const m = localStorage.getItem(MODEL_KEY);
   // 구버전 모델이 저장돼 있으면 2.5-flash로 교체
@@ -538,25 +533,16 @@ const getGeminiModel = () => {
   }
   return m;
 };
-const hasGeminiKey   = () => !!getGeminiKey();
+const hasGeminiKey = () => true; // Cloud Function 사용 — 키 불필요
 
 async function callGemini(prompt, maxTokens = 4096, jsonMode = false) {
-  const key   = getGeminiKey();
-  if (!key) throw new Error('NO_KEY');
   const model = getGeminiModel();
-  const url   = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
-  const genConfig = { maxOutputTokens: maxTokens, temperature: 0.2 };
-  if (jsonMode) genConfig.responseMimeType = 'application/json';
-
-  const body = JSON.stringify({
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: genConfig,
-  });
+  const body = JSON.stringify({ prompt, maxTokens, model, jsonMode });
 
   // 503 과부하 시 최대 3회 자동 재시도 (2s → 4s → 8s)
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, {
+    const res = await fetch(CLOUD_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -576,7 +562,7 @@ async function callGemini(prompt, maxTokens = 4096, jsonMode = false) {
       throw new Error(err?.error?.message || `HTTP ${res.status}`);
     }
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return data.text || '';
   }
   throw new Error('서버 과부하 — 잠시 후 다시 시도해주세요');
 }
@@ -1320,20 +1306,18 @@ function saveSettings() {
 }
 
 async function testAPI() {
-  const key   = getGeminiKey();
   const model = document.getElementById('model-select').value;
   const btn   = document.getElementById('test-api-btn');
   btn.textContent = `${model} 테스트 중...`; btn.disabled = true;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-    const res = await fetch(url, {
+    const res = await fetch(CLOUD_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents:[{ parts:[{ text:'Hi' }] }], generationConfig:{ maxOutputTokens:16 } }),
+      body: JSON.stringify({ prompt: 'Hi', maxTokens: 16, model, jsonMode: false }),
     });
     const d = await res.json();
-    if (d.candidates) showResult(`✅ [${model}] 연결 성공!`, true);
-    else              showResult(`❌ [${model}] ` + (d.error?.message || '알 수 없는 오류'), false);
+    if (d.text !== undefined) showResult(`✅ [${model}] Vertex AI 연결 성공!`, true);
+    else                      showResult(`❌ [${model}] ` + (d.error || '알 수 없는 오류'), false);
   } catch (e) {
     showResult('❌ 네트워크 오류: ' + e.message, false);
   }
