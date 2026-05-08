@@ -485,6 +485,7 @@ select.setting-input { cursor: pointer; }
     <div id="translation-wrapper" style="display:none">
       <div class="trans-header">
         <span class="trans-header-label">한국어 번역</span>
+        <span id="bg-translate-progress" style="font-size:11px;color:var(--overlay1);margin-left:8px"></span>
         <span class="trans-engine-tag" id="trans-engine-tag">—</span>
       </div>
       <div id="translation-content"></div>
@@ -699,21 +700,54 @@ async function translatePage(pageNum, text) {
 }
 
 async function prefetchNextPage(currentPageNum) {
+  // 현재 페이지 완료 후 바로 다음 페이지 우선 번역 (빠른 반응)
   const next = currentPageNum + 1;
   if (next > state.totalPages || state.pageTranslations[next]) return;
   try {
     const text = await extractPageText(next);
     if (text && text.trim()) {
-      const useAI = hasGeminiKey();
-      let result;
-      if (useAI) {
-        result = await translateWithGemini(text);
-      } else {
-        result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
-      }
+      const result = hasGeminiKey()
+        ? await translateWithGemini(text)
+        : { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
       state.pageTranslations[next] = result;
     }
   } catch {}
+}
+
+// 백그라운드에서 전체 페이지 순차 번역
+let _bgTranslationId = 0; // PDF 바뀌면 이전 루프 중단용
+async function startBackgroundTranslation(sessionId) {
+  await sleep(1500); // 현재 페이지 번역 먼저 끝나도록 잠시 대기
+  for (let page = 1; page <= state.totalPages; page++) {
+    if (_bgTranslationId !== sessionId) return; // PDF 바뀌면 중단
+    if (state.pageTranslations[page]) continue;  // 이미 번역됨
+    try {
+      const text = await extractPageText(page);
+      if (_bgTranslationId !== sessionId) return;
+      if (text && text.trim()) {
+        const result = hasGeminiKey()
+          ? await translateWithGemini(text)
+          : { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
+        if (_bgTranslationId !== sessionId) return;
+        state.pageTranslations[page] = result;
+        updateBgProgress(page, state.totalPages);
+      }
+    } catch {}
+    await sleep(300); // API 과부하 방지
+  }
+  updateBgProgress(null, state.totalPages); // 완료
+}
+
+function updateBgProgress(page, total) {
+  let el = document.getElementById('bg-translate-progress');
+  if (!el) return;
+  if (page === null) {
+    el.textContent = '✅ 전체 번역 완료';
+    setTimeout(() => { el.textContent = ''; }, 3000);
+  } else {
+    const done = Object.keys(state.pageTranslations).length;
+    el.textContent = `⏳ 백그라운드 번역 중… ${done}/${total}`;
+  }
 }
 
 function renderTranslation(result) {
@@ -1230,6 +1264,10 @@ async function loadPDF(file) {
       state.paperText = fullText;
       processVocabulary(fullText);
     });
+
+    // 전체 페이지 백그라운드 번역 시작
+    const sessionId = ++_bgTranslationId;
+    startBackgroundTranslation(sessionId);
   } catch (e) {
     showToast('❌ PDF 로딩 실패: ' + e.message);
   }
