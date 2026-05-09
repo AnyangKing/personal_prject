@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>일본어 마스터 AI </title>
+  <title>일본어 마스터 AI</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',sans-serif;background:#1a3a6b;color:white;min-height:100vh}
@@ -12,7 +12,7 @@
     header{background:#0f2548;padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-wrap:wrap}
     header h1{font-size:1.2rem;font-weight:700;white-space:nowrap}
     .hdr-stats{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .stat-chip{background:rgba(161, 149, 149, 0.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.8rem;display:flex;align-items:center;gap:5px}
+    .stat-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.8rem;display:flex;align-items:center;gap:5px}
     .stat-chip.streak{border-color:rgba(255,183,77,.5);background:rgba(255,183,77,.12)}
     .stat-chip.level{border-color:rgba(79,195,247,.5);background:rgba(79,195,247,.12)}
     .xp-bar-wrap{width:60px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
@@ -103,6 +103,11 @@
     .quiz-mode-btn.active{background:white;color:#1a3a6b;border-color:white}
     .quiz-mode-btn.ai-mode{border-color:rgba(255,183,77,.5);color:rgba(255,183,77,.7)}
     .quiz-mode-btn.ai-mode.active{background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border-color:transparent}
+
+    /* 퀴즈 범위 */
+    .quiz-range-wrap{display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+    .quiz-range-btn{padding:5px 13px;border-radius:20px;border:2px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.45);cursor:pointer;font-size:.76rem;font-weight:600;transition:all .2s}
+    .quiz-range-btn.active{background:rgba(129,199,132,.85);color:#1a3a6b;border-color:transparent}
 
     /* 타이핑 */
     .typing-area{text-align:center;margin-bottom:14px}
@@ -465,6 +470,11 @@
           <button class="quiz-mode-btn"        id="mode-typing" onclick="setQuizMode('typing')">타이핑</button>
           <button class="quiz-mode-btn ai-mode" id="mode-ai"   onclick="setQuizMode('ai')">🤖 AI 맞춤 복습</button>
         </div>
+        <div class="quiz-range-wrap" id="quiz-range-wrap">
+          <button class="quiz-range-btn active" id="range-basic" onclick="setQuizRange('basic')">기본 히라가나</button>
+          <button class="quiz-range-btn"        id="range-daku"  onclick="setQuizRange('daku')">+탁음·반탁음</button>
+          <button class="quiz-range-btn"        id="range-all"   onclick="setQuizRange('all')">전체 (탁음+요음)</button>
+        </div>
         <div class="quiz-box" id="quiz-box">
           <div class="quiz-label" id="quiz-label">가나 퀴즈</div>
           <div class="progress-wrap">
@@ -686,11 +696,9 @@ const YOON_KATA = [
 ];
 
 const KANA_LIST = HIRAGANA_ROWS.flatMap(r=>r.items.filter(Boolean));
-const ALL_KANA = [
-  ...KANA_LIST,
-  ...DAKUTEN_HIRA.flatMap(r=>r.items.filter(Boolean)),
-  ...YOON_HIRA.flatMap(r=>r.items.filter(Boolean)),
-];
+const DAKU_LIST  = DAKUTEN_HIRA.flatMap(r=>r.items.filter(Boolean));
+const YOON_LIST  = YOON_HIRA.flatMap(r=>r.items.filter(Boolean));
+const ALL_KANA = [...KANA_LIST, ...DAKU_LIST, ...YOON_LIST];
 
 const CURRICULUM = [
   {id:1,month:1,title:'あ행',type:'kana',items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']]},
@@ -1012,6 +1020,8 @@ function setQuizMode(mode){
   ['choice','typing','ai'].forEach(m=>{
     document.getElementById('mode-'+m).classList.toggle('active',m===mode);
   });
+  // AI 모드일 때 범위 버튼 숨기기 (자체 풀 사용)
+  document.getElementById('quiz-range-wrap').style.display=(mode==='ai'?'none':'flex');
   if(mode==='ai'){
     aiPool=buildAIPool();
     if(!aiPool.length){
@@ -1045,11 +1055,26 @@ function startQuiz(){
   nextQuestion();
 }
 
+let quizRange='basic';
+function getQuizPool(){
+  if(quizRange==='daku') return [...KANA_LIST,...DAKU_LIST];
+  if(quizRange==='all')  return ALL_KANA;
+  return KANA_LIST;
+}
+function setQuizRange(range){
+  quizRange=range;
+  ['basic','daku','all'].forEach(r=>{
+    document.getElementById('range-'+r).classList.toggle('active',r===range);
+  });
+  startQuiz();
+}
+
 function getNextKana(){
   if(quizMode==='ai'&&aiPool.length){
     return aiPool[qIndex%aiPool.length];
   }
-  return KANA_LIST[Math.floor(Math.random()*KANA_LIST.length)];
+  const pool=getQuizPool();
+  return pool[Math.floor(Math.random()*pool.length)];
 }
 
 function nextQuestion(){
@@ -1071,7 +1096,7 @@ function nextQuestion(){
   } else {
     document.getElementById('choices').style.display='grid';
     document.getElementById('typing-area').style.display='none';
-    const wrong=shuffle(KANA_LIST.filter(k=>k[1]!==currentKana[1])).slice(0,3);
+    const wrong=shuffle(ALL_KANA.filter(k=>k[1]!==currentKana[1])).slice(0,3);
     const box=document.getElementById('choices'); box.innerHTML='';
     shuffle([currentKana,...wrong]).forEach(opt=>{
       const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt[1];
@@ -1100,6 +1125,7 @@ function checkAnswer(chosen){
     });
   }
   document.getElementById('result-msg').textContent=ok?'정답! 🎉':'오답 😢  정답: '+currentKana[1];
+  if(!ok) setTimeout(()=>speak(currentKana[0]),300);
   addXP(ok?10:2);
   qIndex++;
   document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
@@ -1124,7 +1150,8 @@ function clearHistory(){
 function showSessionResult(){
   const correct=sessionLog.filter(l=>l.correct).length;
   const pct=Math.round(correct/QUIZ_SIZE*100);
-  const record={id:Date.now(),date:new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),score:correct,total:QUIZ_SIZE,log:sessionLog.slice(),mode:quizMode};
+  const rangeLabel=quizRange==='all'?'전체':quizRange==='daku'?'+탁음':'기본';
+  const record={id:Date.now(),date:new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),score:correct,total:QUIZ_SIZE,log:sessionLog.slice(),mode:quizMode,range:quizRange};
   history.unshift(record); if(history.length>20) history.pop();
   localStorage.setItem('kana_history',JSON.stringify(history));
   document.getElementById('quiz-box').style.display='none';
@@ -1132,7 +1159,7 @@ function showSessionResult(){
   const grade=pct===100?'완벽해요! 🏆':pct>=80?'잘했어요! 🎉':pct>=60?'조금만 더! 💪':'더 연습해봐요 📖';
   document.getElementById('rs-title').textContent=grade;
   document.getElementById('rs-score').textContent=correct+' / '+QUIZ_SIZE;
-  document.getElementById('rs-sub').textContent='정답률 '+pct+'% · +'+( correct*10+(QUIZ_SIZE-correct)*2)+'XP 획득';
+  document.getElementById('rs-sub').textContent='정답률 '+pct+'% · +'+( correct*10+(QUIZ_SIZE-correct)*2)+'XP 획득 · 범위: '+rangeLabel;
   renderDetailList('rs-detail',sessionLog);
   renderHistory();
   addXP(pct===100?30:pct>=80?15:0);
@@ -1154,8 +1181,9 @@ function renderHistory(){
     const pct=Math.round(r.score/r.total*100);
     const color=pct>=80?'#2ecc71':pct>=60?'#f39c12':'#e74c3c';
     const modeTag=r.mode==='ai'?'🤖 ':r.mode==='typing'?'⌨️ ':'';
+    const rangeTag=r.range==='all'?' [전체]':r.range==='daku'?' [+탁음]':'';
     return `<div class="history-item" onclick="openModal(${i})">
-      <div class="hi-date">${modeTag}${r.date}</div>
+      <div class="hi-date">${modeTag}${r.date}${rangeTag}</div>
       <div class="hi-score">${r.score}/${r.total} <small style="opacity:.6">(${pct}%)</small></div>
       <div class="hi-bar-wrap"><div class="hi-bar" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
@@ -1387,7 +1415,7 @@ function renderLQ(){
     const wrong=shuffle(allItems.filter(it=>it.m!==lqCurrentItem.m)).slice(0,3);
     options=shuffle([lqCurrentItem,...wrong]); getLabel=it=>it.m;
   } else {
-    const wrong=shuffle(KANA_LIST.filter(k=>k[1]!==lqCurrentItem[1])).slice(0,3);
+    const wrong=shuffle(ALL_KANA.filter(k=>k[1]!==lqCurrentItem[1])).slice(0,3);
     options=shuffle([lqCurrentItem,...wrong]); getLabel=it=>it[1];
   }
   const correctLabel=getLabel(lqCurrentItem);
@@ -1426,6 +1454,7 @@ function checkLQ(chosen,correct,isVocab){
     else if(b.textContent===chosen) b.classList.add('wrong');
   });
   document.getElementById('lq-msg').textContent=ok?'정답! 🎉':'오답 😢  정답: '+correct;
+  if(!ok) setTimeout(()=>speak(kanaStr),300);
   addXP(ok?10:2);
   lqIndex++;
   const nb=document.getElementById('lq-next');
@@ -1479,39 +1508,31 @@ function showPage(page){
 /* ══════════════════════════════════════════════
    AI 회화 — 오프라인 상황 DB + Gemini 연동
 ══════════════════════════════════════════════ */
-const GEMINI_KEY = 'AIzaSyB3AxzlwPkygKBUg_qXsp1Mdd1zB-ga4Yk';
-const GEMINI_MODEL = 'gemini-2.5-pro';
+/* ── Cloud Functions 프록시 URL (배포 후 교체) ── */
+const CLOUD_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL';
 
-/* 네이티브 Gemini API 헬퍼 */
+/* 단일턴 헬퍼 */
 async function _geminiRequest(systemPrompt, userPrompt, temperature = 0.75){
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
-  const body = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-    generationConfig: { temperature, maxOutputTokens: 2048, responseMimeType: 'application/json' }
-  };
-  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || 'HTTP ' + res.status); }
+  const res = await fetch(CLOUD_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, userPrompt, temperature, maxTokens: 2048, jsonMode: true })
+  });
+  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
   const data = await res.json();
-  return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  return data.text || '';
 }
 
-/* 대화용 — 멀티턴 메시지를 네이티브 형식으로 변환 */
+/* 멀티턴 대화 헬퍼 */
 async function _geminiConvRequest(systemPrompt, messages, temperature = 0.85){
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
-  // OpenAI messages → Gemini contents (user/model 교대)
-  const contents = messages
-    .filter(m => m.role !== 'system')
-    .map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
-  const body = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents,
-    generationConfig: { temperature, maxOutputTokens: 512, responseMimeType: 'application/json' }
-  };
-  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || 'HTTP ' + res.status); }
+  const res = await fetch(CLOUD_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, messages, temperature, maxTokens: 512, jsonMode: true })
+  });
+  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
   const data = await res.json();
-  return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  return data.text || '';
 }
 
 /* ── 내장 상황별 표현 데이터베이스 ── */
