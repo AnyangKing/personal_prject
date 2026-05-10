@@ -109,6 +109,13 @@
     .quiz-range-btn{padding:5px 13px;border-radius:20px;border:2px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.45);cursor:pointer;font-size:.76rem;font-weight:600;transition:all .2s}
     .quiz-range-btn.active{background:rgba(129,199,132,.85);color:#1a3a6b;border-color:transparent}
 
+    /* AI 연결 상태 배지 */
+    .ai-status-badge{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid;white-space:nowrap;transition:all .4s;letter-spacing:.2px;flex-shrink:0}
+    .ai-status-badge.checking{color:rgba(255,255,255,.35);border-color:rgba(255,255,255,.15);animation:pulse-badge 1.4s infinite}
+    .ai-status-badge.ok{color:#a6e3a1;border-color:rgba(166,227,161,.45);background:rgba(166,227,161,.08)}
+    .ai-status-badge.err{color:#f38ba8;border-color:rgba(243,139,168,.45);background:rgba(243,139,168,.08)}
+    @keyframes pulse-badge{0%,100%{opacity:.4}50%{opacity:1}}
+
     /* 타이핑 */
     .typing-area{text-align:center;margin-bottom:14px}
     .typing-input{width:100%;max-width:240px;padding:13px 16px;border-radius:12px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:white;font-size:1.3rem;text-align:center;outline:none;letter-spacing:3px}
@@ -406,6 +413,7 @@
     <button id="btn-ai"       onclick="showPage('ai')"  >🤖 AI 표현</button>
     <button id="btn-conv"     onclick="showPage('conv')" >💬 AI 대화</button>
   </nav>
+  <span class="ai-status-badge checking" id="ai-status">⬤ AI 확인 중</span>
 </header>
 
 <div class="container">
@@ -1511,28 +1519,68 @@ function showPage(page){
 /* ── Cloud Functions 프록시 URL (배포 후 교체) ── */
 const CLOUD_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL';
 
-/* 단일턴 헬퍼 */
-async function _geminiRequest(systemPrompt, userPrompt, temperature = 0.75){
-  const res = await fetch(CLOUD_FUNCTION_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemPrompt, userPrompt, temperature, maxTokens: 2048, jsonMode: true })
-  });
-  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
-  const data = await res.json();
-  return data.text || '';
+/* AI 연결 상태 확인 */
+async function checkAIStatus(){
+  const badge = document.getElementById('ai-status');
+  try {
+    const res = await fetch(CLOUD_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userPrompt: '!', maxTokens: 4, jsonMode: false })
+    });
+    if(res.ok){
+      badge.textContent = '⬤ AI 연결됨';
+      badge.className = 'ai-status-badge ok';
+    } else {
+      badge.textContent = '⬤ AI 오류 ' + res.status;
+      badge.className = 'ai-status-badge err';
+    }
+  } catch(e){
+    badge.textContent = '⬤ AI 오프라인';
+    badge.className = 'ai-status-badge err';
+  }
 }
 
-/* 멀티턴 대화 헬퍼 */
+/* 단일턴 헬퍼 (503 자동 재시도) */
+async function _geminiRequest(systemPrompt, userPrompt, temperature = 0.75){
+  for(let attempt = 0; attempt < 3; attempt++){
+    const res = await fetch(CLOUD_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemPrompt, userPrompt, temperature, maxTokens: 2048, jsonMode: true })
+    });
+    if(res.status === 503 && attempt < 2){
+      const wait = (attempt + 1) * 2000;
+      showToast(`⏳ AI 서버 혼잡 — ${wait/1000}초 후 재시도 (${attempt+1}/3)...`);
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+    if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
+    const data = await res.json();
+    return data.text || '';
+  }
+  throw new Error('서버 과부하 — 잠시 후 다시 시도해주세요');
+}
+
+/* 멀티턴 대화 헬퍼 (503 자동 재시도) */
 async function _geminiConvRequest(systemPrompt, messages, temperature = 0.85){
-  const res = await fetch(CLOUD_FUNCTION_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemPrompt, messages, temperature, maxTokens: 512, jsonMode: true })
-  });
-  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
-  const data = await res.json();
-  return data.text || '';
+  for(let attempt = 0; attempt < 3; attempt++){
+    const res = await fetch(CLOUD_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemPrompt, messages, temperature, maxTokens: 512, jsonMode: true })
+    });
+    if(res.status === 503 && attempt < 2){
+      const wait = (attempt + 1) * 2000;
+      showToast(`⏳ AI 서버 혼잡 — ${wait/1000}초 후 재시도 (${attempt+1}/3)...`);
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+    if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e?.error || 'HTTP ' + res.status); }
+    const data = await res.json();
+    return data.text || '';
+  }
+  throw new Error('서버 과부하 — 잠시 후 다시 시도해주세요');
 }
 
 /* ── 내장 상황별 표현 데이터베이스 ── */
@@ -1973,6 +2021,7 @@ buildKanaTable('chart-kata-yoon', YOON_KATA, 'yoon');
 buildCompareTable();
 updateHeaderStats();
 checkStreak();
+checkAIStatus();
 </script>
 </body>
 </html>
