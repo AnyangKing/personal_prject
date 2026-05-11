@@ -432,10 +432,6 @@ const HIRAGANA = [
   ['わ','wa'],null,null,null,['を','wo'],
   ['ん','n'],null,null,null,null,
 ];
-const KANA_LIST = HIRAGANA.filter(Boolean);
-const DAKU_LIST = DAKUTEN_HIRA.flatMap(r => r.items);
-const YOON_LIST = YOON_HIRA.flatMap(r => r.items);
-const ALL_KANA  = [...KANA_LIST, ...DAKU_LIST, ...YOON_LIST];
 
 const DAKUTEN_HIRA = [
   { label:'が행', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go']] },
@@ -477,6 +473,11 @@ const YOON_KATA = [
   { label:'ビャ行', items:[['ビャ','bya'],['ビュ','byu'],['ビョ','byo']] },
   { label:'ピャ行', items:[['ピャ','pya'],['ピュ','pyu'],['ピョ','pyo']] },
 ];
+
+const KANA_LIST = HIRAGANA.filter(Boolean);
+const DAKU_LIST = DAKUTEN_HIRA.flatMap(r => r.items);
+const YOON_LIST = YOON_HIRA.flatMap(r => r.items);
+const ALL_KANA  = [...KANA_LIST, ...DAKU_LIST, ...YOON_LIST];
 
 const CURRICULUM = [
   // ── 1단계: 히라가나 (4주) ──
