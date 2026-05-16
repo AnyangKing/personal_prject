@@ -44,3 +44,10 @@ wandb/
 
 *.json
 *.js
+*.map
+*.wsam
+*.ts
+*.mjs
+*.yml
+*.conf
+*.css
