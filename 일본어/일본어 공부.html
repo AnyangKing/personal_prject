@@ -746,7 +746,6 @@ function nextQuestion() {
     document.getElementById('typing-area').style.display='block';
     const inp = document.getElementById('typing-input');
     inp.value=''; inp.className='typing-input'; inp.disabled=false;
-    inp.querySelector ? null : setTimeout(()=>inp.focus(), 50);
     setTimeout(()=>inp.focus(), 50);
   }
 }
@@ -768,6 +767,7 @@ function checkAnswer(chosen) {
   }
 
   document.getElementById('result-msg').textContent = ok ? '정답! 🎉' : `오답 😢  정답: ${currentKana[1]}`;
+  if (!ok) setTimeout(() => speak(currentKana[0]), 300);
   qIndex++;
   document.getElementById('prog-fill').style.width=(qIndex/QUIZ_SIZE*100)+'%';
   document.getElementById('prog-text').textContent=`${qIndex} / ${QUIZ_SIZE}`;
@@ -1075,6 +1075,7 @@ function checkLQ(chosen, correct, isVocab) {
     else if(b.textContent===chosen) b.classList.add('wrong');
   });
   document.getElementById('lq-msg').textContent = ok?'정답! 🎉':`오답 😢  정답: ${correct}`;
+  if (!ok) { const kanaStr = isVocab ? lqCurrentItem.w : lqCurrentItem[0]; setTimeout(() => speak(kanaStr), 300); }
   lqIndex++;
   const nb=document.getElementById('lq-next');
   nb.style.display='inline-block';
@@ -1116,7 +1117,7 @@ function showPage(page) {
     document.getElementById('page-'+p).style.display = p===page?'block':'none';
     document.getElementById('btn-'+p).classList.toggle('active', p===page);
   });
-  if (page==='quiz')  { renderHistory(); startQuiz(); }
+  if (page==='quiz')  { renderHistory(); if(qIndex===0 && sessionLog.length===0) startQuiz(); }
   if (page==='learn') {
     document.getElementById('learn-overview').style.display='block';
     document.getElementById('lesson-view').style.display='none';
