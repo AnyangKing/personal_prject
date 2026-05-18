@@ -480,39 +480,47 @@ const YOON_LIST = YOON_HIRA.flatMap(r => r.items);
 const ALL_KANA  = [...KANA_LIST, ...DAKU_LIST, ...YOON_LIST];
 
 const CURRICULUM = [
-  // ── 1단계: 히라가나 (4주) ──
-  {id:1, month:1, title:'あ행', type:'kana', items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']]},
-  {id:2, month:1, title:'か행', type:'kana', items:[['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko']]},
-  {id:3, month:1, title:'さ행', type:'kana', items:[['さ','sa'],['し','shi'],['す','su'],['せ','se'],['そ','so']]},
-  {id:4, month:1, title:'た행', type:'kana', items:[['た','ta'],['ち','chi'],['つ','tsu'],['て','te'],['と','to']]},
-  {id:5, month:1, title:'な행', type:'kana', items:[['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']]},
-  {id:6, month:1, title:'は행', type:'kana', items:[['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho']]},
-  {id:7, month:1, title:'ま행', type:'kana', items:[['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']]},
-  {id:8, month:1, title:'や·ら행', type:'kana', items:[['や','ya'],['ゆ','yu'],['よ','yo'],['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']]},
-  {id:9, month:1, title:'わ행·ん', type:'kana', items:[['わ','wa'],['を','wo'],['ん','n']]},
-  {id:10, month:1, title:'히라가나\n총복습', type:'kana_review', items:null},
+  // ── 1단계: 히라가나 청음 ──
+  {id:1,  month:1, title:'あ행', type:'kana', items:[['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']]},
+  {id:2,  month:1, title:'か행', type:'kana', items:[['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko']]},
+  {id:3,  month:1, title:'さ행', type:'kana', items:[['さ','sa'],['し','shi'],['す','su'],['せ','se'],['そ','so']]},
+  {id:4,  month:1, title:'た행', type:'kana', items:[['た','ta'],['ち','chi'],['つ','tsu'],['て','te'],['と','to']]},
+  {id:5,  month:1, title:'な행', type:'kana', items:[['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']]},
+  {id:6,  month:1, title:'は행', type:'kana', items:[['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho']]},
+  {id:7,  month:1, title:'ま행', type:'kana', items:[['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']]},
+  {id:8,  month:1, title:'や·ら행', type:'kana', items:[['や','ya'],['ゆ','yu'],['よ','yo'],['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']]},
+  {id:9,  month:1, title:'わ행·ん', type:'kana', items:[['わ','wa'],['を','wo'],['ん','n']]},
+  {id:10, month:1, title:'히라가나\n청음 복습', type:'kana_review', items:null},
 
-  // ── 2단계: 가타카나 (4주) ──
-  {id:11, month:2, title:'ア행', type:'kana', items:[['ア','a'],['イ','i'],['ウ','u'],['エ','e'],['オ','o']]},
-  {id:12, month:2, title:'カ행', type:'kana', items:[['カ','ka'],['キ','ki'],['ク','ku'],['ケ','ke'],['コ','ko']]},
-  {id:13, month:2, title:'サ행', type:'kana', items:[['サ','sa'],['シ','shi'],['ス','su'],['セ','se'],['ソ','so']]},
-  {id:14, month:2, title:'タ행', type:'kana', items:[['タ','ta'],['チ','chi'],['ツ','tsu'],['テ','te'],['ト','to']]},
-  {id:15, month:2, title:'ナ행', type:'kana', items:[['ナ','na'],['ニ','ni'],['ヌ','nu'],['ネ','ne'],['ノ','no']]},
-  {id:16, month:2, title:'ハ행', type:'kana', items:[['ハ','ha'],['ヒ','hi'],['フ','fu'],['ヘ','he'],['ホ','ho']]},
-  {id:17, month:2, title:'マ행', type:'kana', items:[['マ','ma'],['ミ','mi'],['ム','mu'],['メ','me'],['モ','mo']]},
-  {id:18, month:2, title:'ヤ·ラ행', type:'kana', items:[['ヤ','ya'],['ユ','yu'],['ヨ','yo'],['ラ','ra'],['リ','ri'],['ル','ru'],['レ','re'],['ロ','ro']]},
-  {id:19, month:2, title:'ワ행·ン', type:'kana', items:[['ワ','wa'],['ヲ','wo'],['ン','n']]},
-  {id:20, month:2, title:'가타카나\n총복습', type:'kana_review', items:null},
+  // ── 2단계: 히라가나 탁음·반탁음·요음 ──
+  {id:11, month:2, title:'が행·ざ행\n탁음①', type:'kana', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go'],['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo']]},
+  {id:12, month:2, title:'だ행·ば행\n탁음②', type:'kana', items:[['だ','da'],['ぢ','ji'],['づ','zu'],['で','de'],['ど','do'],['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']]},
+  {id:13, month:2, title:'ぱ행\n반탁음',    type:'kana', items:[['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']]},
+  {id:14, month:2, title:'탁음·반탁음\n총복습', type:'daku_review', items:null},
+  {id:15, month:2, title:'きゃ~りゃ\n요음①', type:'kana', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],['しゃ','sha'],['しゅ','shu'],['しょ','sho'],['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo'],['みゃ','mya'],['みゅ','myu'],['みょ','myo'],['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']]},
+  {id:16, month:2, title:'ぎゃ~ぴゃ\n요음②', type:'kana', items:[['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo'],['じゃ','ja'],['じゅ','ju'],['じょ','jo'],['びゃ','bya'],['びゅ','byu'],['びょ','byo'],['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']]},
 
-  // ── 3단계: 기초 단어 (4주) ──
-  {id:21, month:3, title:'숫자', type:'vocab', items:[
+  // ── 3단계: 가타카나 ──
+  {id:17, month:3, title:'ア행', type:'kana', items:[['ア','a'],['イ','i'],['ウ','u'],['エ','e'],['オ','o']]},
+  {id:18, month:3, title:'カ행', type:'kana', items:[['カ','ka'],['キ','ki'],['ク','ku'],['ケ','ke'],['コ','ko']]},
+  {id:19, month:3, title:'サ행', type:'kana', items:[['サ','sa'],['シ','shi'],['ス','su'],['セ','se'],['ソ','so']]},
+  {id:20, month:3, title:'タ행', type:'kana', items:[['タ','ta'],['チ','chi'],['ツ','tsu'],['テ','te'],['ト','to']]},
+  {id:21, month:3, title:'ナ행', type:'kana', items:[['ナ','na'],['ニ','ni'],['ヌ','nu'],['ネ','ne'],['ノ','no']]},
+  {id:22, month:3, title:'ハ행', type:'kana', items:[['ハ','ha'],['ヒ','hi'],['フ','fu'],['ヘ','he'],['ホ','ho']]},
+  {id:23, month:3, title:'マ행', type:'kana', items:[['マ','ma'],['ミ','mi'],['ム','mu'],['メ','me'],['モ','mo']]},
+  {id:24, month:3, title:'ヤ·ラ행', type:'kana', items:[['ヤ','ya'],['ユ','yu'],['ヨ','yo'],['ラ','ra'],['リ','ri'],['ル','ru'],['レ','re'],['ロ','ro']]},
+  {id:25, month:3, title:'ワ행·ン', type:'kana', items:[['ワ','wa'],['ヲ','wo'],['ン','n']]},
+  {id:26, month:3, title:'가타카나\n총복습', type:'kana_review', items:null},
+
+  // ── 4단계: 기초 단어·문장 ──
+  {id:27, month:4, title:'숫자', type:'vocab', items:[
     {w:'いち',r:'이치',m:'1'},    {w:'に',r:'니',m:'2'},
     {w:'さん',r:'산',m:'3'},      {w:'よん',r:'욘',m:'4'},
     {w:'ご',r:'고',m:'5'},        {w:'ろく',r:'로쿠',m:'6'},
     {w:'なな',r:'나나',m:'7'},    {w:'はち',r:'하치',m:'8'},
     {w:'きゅう',r:'큐',m:'9'},    {w:'じゅう',r:'쥬',m:'10'},
   ]},
-  {id:22, month:3, title:'인사', type:'vocab', items:[
+  {id:28, month:4, title:'인사', type:'vocab', items:[
     {w:'おはよう',r:'오하요',m:'좋은 아침'},
     {w:'こんにちは',r:'콘니치와',m:'안녕하세요'},
     {w:'こんばんは',r:'콘방와',m:'좋은 저녁'},
@@ -522,19 +530,19 @@ const CURRICULUM = [
     {w:'いいえ',r:'이이에',m:'아니요'},
     {w:'さようなら',r:'사요나라',m:'안녕히 가세요'},
   ]},
-  {id:23, month:3, title:'색깔', type:'vocab', items:[
+  {id:29, month:4, title:'색깔', type:'vocab', items:[
     {w:'あか',r:'아카',m:'빨간색'},   {w:'あお',r:'아오',m:'파란색'},
     {w:'きいろ',r:'키이로',m:'노란색'},{w:'しろ',r:'시로',m:'흰색'},
     {w:'くろ',r:'쿠로',m:'검은색'},   {w:'みどり',r:'미도리',m:'초록색'},
     {w:'ピンク',r:'핑쿠',m:'분홍색'},
   ]},
-  {id:24, month:3, title:'음식', type:'vocab', items:[
+  {id:30, month:4, title:'음식', type:'vocab', items:[
     {w:'ごはん',r:'고항',m:'밥'},       {w:'みず',r:'미즈',m:'물'},
     {w:'おちゃ',r:'오차',m:'녹차'},     {w:'パン',r:'빵',m:'빵'},
     {w:'すし',r:'스시',m:'초밥'},       {w:'ラーメン',r:'라멘',m:'라면'},
     {w:'たまご',r:'타마고',m:'계란'},   {w:'にく',r:'니쿠',m:'고기'},
   ]},
-  {id:25, month:3, title:'가족·사람', type:'vocab', items:[
+  {id:31, month:4, title:'가족·사람', type:'vocab', items:[
     {w:'わたし',r:'와타시',m:'나/저'},
     {w:'おかあさん',r:'오카상',m:'어머니'},
     {w:'おとうさん',r:'오토상',m:'아버지'},
@@ -542,25 +550,25 @@ const CURRICULUM = [
     {w:'おねえさん',r:'오네상',m:'언니/누나'},
     {w:'ともだち',r:'토모다치',m:'친구'},
   ]},
-  {id:26, month:3, title:'장소', type:'vocab', items:[
+  {id:32, month:4, title:'장소', type:'vocab', items:[
     {w:'がっこう',r:'각코',m:'학교'},   {w:'えき',r:'에키',m:'역'},
     {w:'みせ',r:'미세',m:'가게'},       {w:'いえ',r:'이에',m:'집'},
     {w:'トイレ',r:'토이레',m:'화장실'}, {w:'コンビニ',r:'콤비니',m:'편의점'},
     {w:'びょういん',r:'뵤인',m:'병원'},
   ]},
-  {id:27, month:3, title:'기초 동사', type:'vocab', items:[
+  {id:33, month:4, title:'기초 동사', type:'vocab', items:[
     {w:'たべる',r:'타베루',m:'먹다'},   {w:'のむ',r:'노무',m:'마시다'},
     {w:'みる',r:'미루',m:'보다'},       {w:'きく',r:'키쿠',m:'듣다'},
     {w:'いく',r:'이쿠',m:'가다'},       {w:'くる',r:'쿠루',m:'오다'},
     {w:'かう',r:'카우',m:'사다'},       {w:'よむ',r:'요무',m:'읽다'},
   ]},
-  {id:28, month:3, title:'형용사', type:'vocab', items:[
+  {id:34, month:4, title:'형용사', type:'vocab', items:[
     {w:'おおきい',r:'오키이',m:'크다'},   {w:'ちいさい',r:'치이사이',m:'작다'},
     {w:'たかい',r:'타카이',m:'비싸다'},   {w:'やすい',r:'야스이',m:'싸다'},
     {w:'あつい',r:'아츠이',m:'덥다'},     {w:'さむい',r:'사무이',m:'춥다'},
     {w:'おいしい',r:'오이시이',m:'맛있다'},{w:'かわいい',r:'카와이이',m:'귀엽다'},
   ]},
-  {id:29, month:3, title:'기초 문장', type:'vocab', items:[
+  {id:35, month:4, title:'기초 문장', type:'vocab', items:[
     {w:'〜です',r:'데스',m:'〜입니다'},
     {w:'〜をください',r:'오쿠다사이',m:'〜주세요'},
     {w:'いくらですか',r:'이쿠라데스카',m:'얼마예요?'},
@@ -568,22 +576,14 @@ const CURRICULUM = [
     {w:'わかりません',r:'와카리마셍',m:'모르겠어요'},
     {w:'もう一度',r:'모이치도',m:'한 번 더'},
   ]},
-  {id:30, month:3, title:'최종\n복습', type:'vocab_review', items:null},
-
-  // ── 4단계: 탁음·반탁음·요음 ──
-  {id:31, month:4, title:'が행·ざ행\n탁음①', type:'kana', items:[['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go'],['ざ','za'],['じ','ji'],['ず','zu'],['ぜ','ze'],['ぞ','zo']]},
-  {id:32, month:4, title:'だ행·ば행\n탁음②', type:'kana', items:[['だ','da'],['ぢ','ji'],['づ','zu'],['で','de'],['ど','do'],['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']]},
-  {id:33, month:4, title:'ぱ행\n반탁음',  type:'kana', items:[['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']]},
-  {id:34, month:4, title:'탁음·반탁음\n총복습', type:'daku_review', items:null},
-  {id:35, month:4, title:'きゃ~りゃ\n요음①', type:'kana', items:[['きゃ','kya'],['きゅ','kyu'],['きょ','kyo'],['しゃ','sha'],['しゅ','shu'],['しょ','sho'],['ちゃ','cha'],['ちゅ','chu'],['ちょ','cho'],['にゃ','nya'],['にゅ','nyu'],['にょ','nyo'],['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo'],['みゃ','mya'],['みゅ','myu'],['みょ','myo'],['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']]},
-  {id:36, month:4, title:'ぎゃ~ぴゃ\n요음②', type:'kana', items:[['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo'],['じゃ','ja'],['じゅ','ju'],['じょ','jo'],['びゃ','bya'],['びゅ','byu'],['びょ','byo'],['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']]},
+  {id:36, month:4, title:'최종\n복습', type:'vocab_review', items:null},
 ];
 
 const MONTH_INFO = {
-  1: { label:'1단계', title:'히라가나 마스터', badge:'m1', desc:'일본어의 기초! 히라가나 46자를 정복해요.' },
-  2: { label:'2단계', title:'가타카나 마스터', badge:'m2', desc:'외래어 표기에 쓰는 가타카나를 배워요.' },
-  3: { label:'3단계', title:'기초 단어·문장', badge:'m3', desc:'일상에서 쓰는 단어와 표현을 익혀요.' },
-  4: { label:'4단계', title:'탁음·반탁음·요음', badge:'m4', desc:'탁음(が·ざ·だ·ば)과 요음(きゃ 등)으로 완성도를 높여요.' },
+  1: { label:'1단계', title:'히라가나 청음',       badge:'m1', desc:'일본어의 기초! 히라가나 46자(청음)를 정복해요.' },
+  2: { label:'2단계', title:'히라가나 탁음·요음',  badge:'m2', desc:'탁음(が·ざ·だ·ば)·반탁음·요음(きゃ 등)으로 히라가나를 완성해요.' },
+  3: { label:'3단계', title:'가타카나 마스터',      badge:'m3', desc:'외래어 표기에 쓰는 가타카나를 배워요.' },
+  4: { label:'4단계', title:'기초 단어·문장',       badge:'m4', desc:'히라가나·가타카나를 모두 알고 나서 일상 단어와 표현을 익혀요.' },
 };
 
 /* ═══════════════════════════════════════════
@@ -597,10 +597,10 @@ function getReviewItems(unit) {
     return CURRICULUM.filter(u => u.month === month && u.type === 'kana').flatMap(u => u.items);
   }
   if (unit.type === 'vocab_review') {
-    return CURRICULUM.filter(u => u.month === 3 && u.type === 'vocab').flatMap(u => u.items);
+    return CURRICULUM.filter(u => u.month === 4 && u.type === 'vocab').flatMap(u => u.items);
   }
   if (unit.type === 'daku_review') {
-    return CURRICULUM.filter(u => u.month === 4 && u.type === 'kana').flatMap(u => u.items);
+    return CURRICULUM.filter(u => u.month === 2 && u.type === 'kana').flatMap(u => u.items);
   }
   return unit.items;
 }
