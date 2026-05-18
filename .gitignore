@@ -51,3 +51,5 @@ wandb/
 *.yml
 *.conf
 *.css
+*.wasm
+*.yaml
