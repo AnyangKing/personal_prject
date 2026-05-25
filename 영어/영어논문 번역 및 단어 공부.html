@@ -358,6 +358,134 @@ select.setting-input { cursor: pointer; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 3px; }
+
+/* ══ Study Mode ══ */
+#study-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 500;
+  display: none; align-items: center; justify-content: center;
+}
+#study-overlay.open { display: flex; }
+#study-panel {
+  background: var(--mantle); border: 1px solid var(--surface1);
+  border-radius: 16px; width: min(680px, 96vw); max-height: 92vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.study-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; border-bottom: 1px solid var(--surface0); flex-shrink: 0;
+}
+.study-header h2 { flex: 1; font-size: 15px; font-weight: 700; }
+.study-mode-tabs {
+  display: flex; gap: 0; flex-shrink: 0;
+  border-bottom: 1px solid var(--surface0);
+}
+.study-tab {
+  flex: 1; padding: 10px; border: none; border-bottom: 2px solid transparent;
+  background: none; color: var(--subtext0); cursor: pointer;
+  font-size: 13px; font-weight: 600; transition: all .15s;
+}
+.study-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.study-body {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.study-prog-wrap { height: 4px; background: var(--surface0); border-radius: 2px; }
+.study-prog-bar  { height: 4px; background: var(--blue); border-radius: 2px; transition: width .35s; }
+.study-stats { display: flex; justify-content: space-between; font-size: 11px; color: var(--subtext0); margin-top: 4px; }
+/* Flashcard */
+.flashcard-wrap { perspective: 1000px; height: 240px; cursor: pointer; }
+.flashcard {
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d; transition: transform .45s;
+  border-radius: 14px;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0; border-radius: 14px;
+  backface-visibility: hidden; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  padding: 24px; border: 1px solid var(--surface1);
+}
+.card-front { background: var(--surface0); }
+.card-back  { background: var(--base); transform: rotateY(180deg); }
+.card-word-en { font-size: 34px; font-weight: 700; color: var(--blue); text-align: center; }
+.card-pos     { font-size: 12px; color: var(--overlay0); }
+.card-hint    { font-size: 11px; color: var(--overlay0); margin-top: 6px; }
+.card-paper   { font-size: 10px; color: var(--overlay0); }
+.card-word-ko { font-size: 22px; font-weight: 700; color: var(--green); text-align: center; }
+.card-definition { font-size: 12px; color: var(--subtext0); text-align: center; max-width: 480px; line-height:1.5; }
+.card-example { font-size: 12px; color: var(--subtext0); text-align: center; font-style: italic; max-width: 480px; line-height: 1.6; }
+.card-example em { color: var(--yellow); font-style: normal; font-weight: 600; }
+/* SRS buttons */
+.srs-btns { display: flex; gap: 8px; }
+.srs-btn {
+  flex: 1; padding: 9px 6px; border-radius: 8px; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+}
+.srs-btn.wrong { background: rgba(243,139,168,.18); color: var(--red); }
+.srs-btn.hard  { background: rgba(249,226,175,.18); color: var(--yellow); }
+.srs-btn.good  { background: rgba(166,227,161,.18); color: var(--green); }
+.srs-btn.easy  { background: rgba(137,180,250,.18); color: var(--blue); }
+.srs-btn:hover { filter: brightness(1.25); }
+.study-reveal-btn {
+  width: 100%; padding: 11px; background: var(--blue); color: var(--base);
+  border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity .2s;
+}
+.study-reveal-btn:hover { opacity: .82; }
+/* Cloze */
+.cloze-sentence {
+  background: var(--surface0); border-radius: 12px;
+  padding: 22px; font-size: 15px; line-height: 2; text-align: center;
+}
+.cloze-blank {
+  display: inline-block; min-width: 100px;
+  border-bottom: 2px solid var(--blue); padding: 0 6px; margin: 0 3px;
+}
+.cloze-row { display: flex; gap: 8px; }
+.cloze-input {
+  flex: 1; padding: 10px 14px; border-radius: 8px;
+  background: var(--surface0); border: 1px solid var(--surface1);
+  color: var(--text); font-size: 15px; outline: none; transition: border-color .2s;
+}
+.cloze-input:focus   { border-color: var(--blue); }
+.cloze-input.correct { border-color: var(--green); background: rgba(166,227,161,.08); }
+.cloze-input.err     { border-color: var(--red);   background: rgba(243,139,168,.08); }
+.cloze-submit {
+  padding: 10px 18px; border-radius: 8px; background: var(--blue);
+  color: var(--base); border: none; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity .2s;
+}
+.cloze-submit:hover { opacity: .82; }
+.cloze-feedback { text-align: center; font-size: 13px; font-weight: 600; min-height: 18px; }
+.cloze-feedback.ok  { color: var(--green); }
+.cloze-feedback.err { color: var(--red); }
+/* Complete */
+.study-complete {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 32px 20px; text-align: center;
+}
+.study-complete .big-emoji { font-size: 48px; }
+.study-complete h3 { font-size: 20px; }
+.study-complete p  { color: var(--subtext0); font-size: 13px; line-height: 1.7; }
+.study-stat-row { display: flex; gap: 16px; }
+.stat-box { background: var(--surface0); border-radius: 10px; padding: 12px 18px; text-align: center; }
+.stat-box .num { font-size: 26px; font-weight: 700; color: var(--blue); }
+.stat-box .lbl { font-size: 11px; color: var(--subtext0); margin-top: 2px; }
+/* Empty */
+.study-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 40px 20px; text-align: center; color: var(--subtext0);
+}
+.study-empty .big-emoji { font-size: 40px; }
+/* Study badge */
+#study-btn { position: relative; }
+.study-badge {
+  position: absolute; top: 1px; right: 1px;
+  background: var(--red); color: #fff; border-radius: 8px;
+  font-size: 9px; font-weight: 700; padding: 1px 4px;
+  min-width: 14px; text-align: center; pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -369,6 +497,21 @@ select.setting-input { cursor: pointer; }
   <div class="drag-icon">📄</div>
   <div class="drag-text">PDF를 여기에 놓으세요</div>
   <div class="drag-sub">논문 PDF 파일을 드래그하여 업로드</div>
+</div>
+
+<!-- Study Modal -->
+<div id="study-overlay">
+  <div id="study-panel">
+    <div class="study-header">
+      <h2>📖 단어 학습</h2>
+      <button class="hbtn" id="study-close-btn" title="닫기" onclick="closeStudy()">✕</button>
+    </div>
+    <div class="study-mode-tabs">
+      <button class="study-tab active" data-smode="flashcard">🃏 플래시카드</button>
+      <button class="study-tab" data-smode="cloze">✏️ 빈칸채우기</button>
+    </div>
+    <div class="study-body" id="study-body"></div>
+  </div>
 </div>
 
 <!-- Settings Modal -->
@@ -419,6 +562,7 @@ select.setting-input { cursor: pointer; }
     <span id="page-info">— / —</span>
     <button class="page-btn" id="next-btn" disabled>›</button>
   </div>
+  <button class="hbtn" id="study-btn" title="단어 학습">📖<span class="study-badge" id="study-badge" style="display:none"></span></button>
   <button class="hbtn" id="settings-btn" title="설정">⚙️</button>
 </div>
 
@@ -544,11 +688,19 @@ async function callGemini(prompt, maxTokens = 4096, jsonMode = false) {
 
   // 503(과부하) / 429(Rate Limit) 시 최대 3회 자동 재시도
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(CLOUD_FUNCTION_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    });
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 60000); // 60초 클라이언트 타임아웃
+    let res;
+    try {
+      res = await fetch(CLOUD_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (res.status === 503 || res.status === 429) {
       if (attempt < 2) {
@@ -967,6 +1119,7 @@ async function processVocabulary(fullText) {
 
       const repeats = state.currentPaperWords.filter(w => (allVocabulary[w]?.papers?.length || 0) > 1).length;
       showToast(`✅ Gemini AI: ${items.length}개 단어 추출 | 재등장 ${repeats}개`);
+      updateStudyBadge();
       return;
     } catch (e) {
       showToast(`⚠️ Gemini 추출 실패 → 기본 방식 전환: ${e.message}`);
@@ -1385,6 +1538,244 @@ function toggleSidebar(collapsed) {
 }
 
 // ══════════════════════════════════════════════
+//  Study Mode — Flashcard + Cloze + SRS
+// ══════════════════════════════════════════════
+const SRS_KEY = 'pv_srs';
+let srsData = JSON.parse(localStorage.getItem(SRS_KEY) || '{}');
+
+const studyState = {
+  mode: 'flashcard', queue: [], idx: 0,
+  flipped: false, answered: false,
+  correct: 0, wrong: 0, sessionTotal: 0,
+};
+
+function saveSRS() { localStorage.setItem(SRS_KEY, JSON.stringify(srsData)); }
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function getDueWords() {
+  const t = today();
+  const due = [], newWords = [];
+  for (const word of Object.keys(allVocabulary)) {
+    if (knownWords.has(word)) continue;
+    const s = srsData[word];
+    if (!s) newWords.push(word);
+    else if (s.nextReview <= t) due.push(word);
+  }
+  due.sort((a, b) => (srsData[a].nextReview||'').localeCompare(srsData[b].nextReview||''));
+  return [...due.slice(0, 15), ...newWords.slice(0, 10)].slice(0, 20);
+}
+
+function applyRating(word, rating) {
+  if (!srsData[word]) srsData[word] = { interval:1, ease:2.5, reviewCount:0, lapses:0, nextReview:today() };
+  const s = srsData[word];
+  s.reviewCount++;
+  let iv;
+  if (rating === 0) {
+    iv = 1; s.ease = Math.max(1.3, s.ease - 0.2); s.lapses++;
+  } else if (rating === 1) {
+    iv = Math.max(1, Math.ceil(s.interval * 1.2)); s.ease = Math.max(1.3, s.ease - 0.15);
+  } else if (rating === 2) {
+    iv = s.reviewCount <= 1 ? 1 : s.reviewCount === 2 ? 3 : Math.max(1, Math.ceil(s.interval * s.ease));
+  } else {
+    iv = s.reviewCount <= 2 ? 4 : Math.max(1, Math.ceil(s.interval * s.ease * 1.3));
+    s.ease = Math.min(4.0, s.ease + 0.1);
+  }
+  s.interval = iv;
+  s.nextReview = addDays(today(), iv);
+  saveSRS();
+}
+
+function updateStudyBadge() {
+  const cnt = getDueWords().length;
+  const badge = document.getElementById('study-badge');
+  if (!badge) return;
+  if (cnt > 0) { badge.textContent = cnt > 99 ? '99+' : cnt; badge.style.display = 'block'; }
+  else badge.style.display = 'none';
+}
+
+function openStudy() {
+  const queue = getDueWords();
+  Object.assign(studyState, { queue, idx:0, flipped:false, answered:false, correct:0, wrong:0, sessionTotal: queue.length });
+  document.getElementById('study-overlay').classList.add('open');
+  renderStudyCard();
+}
+
+function closeStudy() {
+  document.getElementById('study-overlay').classList.remove('open');
+  updateStudyBadge();
+}
+
+function renderStudyCard() {
+  const body = document.getElementById('study-body');
+  const { queue, idx, mode, sessionTotal } = studyState;
+
+  if (!Object.keys(allVocabulary).length) {
+    body.innerHTML = `<div class="study-empty"><div class="big-emoji">📄</div><p>논문을 업로드하면<br>AI가 단어를 자동으로 추출합니다</p></div>`;
+    return;
+  }
+  if (!queue.length || idx >= queue.length) { renderStudyComplete(); return; }
+
+  const pct = sessionTotal > 0 ? (idx / sessionTotal) * 100 : 0;
+  const progressHtml = `
+    <div>
+      <div class="study-prog-wrap"><div class="study-prog-bar" style="width:${pct}%"></div></div>
+      <div class="study-stats"><span>${idx + 1} / ${sessionTotal}</span><span>✅ ${studyState.correct} &nbsp; ❌ ${studyState.wrong}</span></div>
+    </div>`;
+
+  if (mode === 'flashcard') renderFlashcard(body, queue[idx], progressHtml);
+  else renderCloze(body, queue[idx], progressHtml);
+}
+
+function renderFlashcard(body, word, progressHtml) {
+  const info = allVocabulary[word] || {};
+  const { flipped } = studyState;
+  const example = info.example || findExampleSentence(word);
+  const hlEx = example
+    ? example.replace(new RegExp(`\\b(${word}s?|${word}ing|${word}ed)\\b`, 'gi'), m => `<em>${m}</em>`)
+    : '';
+  const paperName = (info.papers||[]).map(id => allPapers[id]?.title||'').filter(Boolean)[0] || '';
+
+  body.innerHTML = progressHtml + `
+    <div class="flashcard-wrap" onclick="flipCard()">
+      <div class="flashcard ${flipped?'flipped':''}">
+        <div class="card-face card-front">
+          <div class="card-word-en">${esc(word)}</div>
+          ${info.pos ? `<div class="card-pos">[${esc(info.pos)}]</div>` : ''}
+          <div class="card-hint">클릭하여 뜻 확인 👆</div>
+          ${paperName ? `<div class="card-paper">📄 ${esc(paperName.length>40?paperName.slice(0,40)+'…':paperName)}</div>` : ''}
+        </div>
+        <div class="card-face card-back">
+          <div class="card-word-ko">${esc(info.korean||'—')}</div>
+          ${info.definition ? `<div class="card-definition">${esc(info.definition)}</div>` : ''}
+          ${hlEx ? `<div class="card-example">${hlEx}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    ${!flipped
+      ? `<button class="study-reveal-btn" onclick="flipCard()">정답 보기</button>`
+      : `<div class="srs-btns">
+          <button class="srs-btn wrong" onclick="rateAndNext(0)">❌ 틀림</button>
+          <button class="srs-btn hard"  onclick="rateAndNext(1)">😓 어려움</button>
+          <button class="srs-btn good"  onclick="rateAndNext(2)">✅ 맞음</button>
+          <button class="srs-btn easy"  onclick="rateAndNext(3)">⚡ 쉬움</button>
+        </div>`
+    }`;
+}
+
+function renderCloze(body, word, progressHtml) {
+  const info = allVocabulary[word] || {};
+  const src = state.paperText || Object.values(state.pageTexts).join('\n');
+  const re = new RegExp(`\\b${word}(s|ed|ing|er|est)?\\b`, 'i');
+  const sentence = splitSentences(src)
+    .map(s => s.replace(/\s+/g,' ').trim())
+    .find(s => re.test(s) && s.length > 20 && s.length < 250) || '';
+
+  const hasSentence = !!sentence;
+  const displaySentence = hasSentence
+    ? sentence.replace(re, '<span class="cloze-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')
+    : '';
+
+  const { answered } = studyState;
+  body.innerHTML = progressHtml + `
+    <div class="cloze-sentence">
+      ${hasSentence ? displaySentence
+        : `<strong style="color:var(--blue);font-size:20px">${esc(word)}</strong><br>
+           <span style="font-size:12px;color:var(--subtext0)">${esc(info.definition||'이 단어의 한국어 뜻은?')}</span>`}
+    </div>
+    <div class="cloze-row">
+      <input class="cloze-input" id="cloze-input" type="text"
+        placeholder="${hasSentence ? '빈칸에 들어갈 단어를 입력하세요...' : '한국어 뜻을 입력하세요...'}"
+        ${answered ? 'disabled' : ''} autocomplete="off" autocorrect="off" spellcheck="false">
+      ${!answered ? `<button class="cloze-submit" onclick="submitCloze('${esc(word)}',${hasSentence})">확인</button>` : ''}
+    </div>
+    <div class="cloze-feedback" id="cloze-feedback"></div>
+    ${answered ? `<div class="srs-btns">
+      <button class="srs-btn wrong" onclick="rateAndNext(0)">❌ 틀림</button>
+      <button class="srs-btn good"  onclick="rateAndNext(2)">✅ 맞음</button>
+      <button class="srs-btn easy"  onclick="rateAndNext(3)">⚡ 쉬움</button>
+    </div>` : ''}`;
+
+  if (!answered) {
+    const inp = document.getElementById('cloze-input');
+    inp?.focus();
+    inp?.addEventListener('keydown', e => { if (e.key==='Enter') submitCloze(word, hasSentence); });
+  }
+}
+
+function flipCard() {
+  studyState.flipped = !studyState.flipped;
+  renderStudyCard();
+}
+
+function submitCloze(word, hasSentence) {
+  const info = allVocabulary[word] || {};
+  const val = (document.getElementById('cloze-input')?.value || '').trim().toLowerCase();
+  const inp = document.getElementById('cloze-input');
+  const fb  = document.getElementById('cloze-feedback');
+
+  let correct = false;
+  if (hasSentence) {
+    const variants = [word, word+'s', word+'ed', word+'ing', word+'er', word+'est'].map(v => v.toLowerCase());
+    correct = variants.includes(val);
+  } else {
+    const koWords = (info.korean||'').split(/[,·\s]+/).map(k=>k.trim()).filter(k=>k.length>0);
+    correct = val.length > 0 && koWords.some(k => val.includes(k) || k.includes(val));
+  }
+
+  if (inp) inp.classList.add(correct ? 'correct' : 'err');
+  if (fb) {
+    fb.className = 'cloze-feedback ' + (correct ? 'ok' : 'err');
+    fb.textContent = correct
+      ? `✅ 정답! ${hasSentence ? '' : `(${info.korean||''})`}`
+      : `❌ 정답: ${hasSentence ? word : info.korean||'—'}`;
+  }
+  studyState.answered = true;
+  // Re-render to show rating buttons (keep input visible)
+  const body = document.getElementById('study-body');
+  const { idx, sessionTotal } = studyState;
+  const pct = sessionTotal > 0 ? (idx / sessionTotal) * 100 : 0;
+  const progressHtml = `<div>
+    <div class="study-prog-wrap"><div class="study-prog-bar" style="width:${pct}%"></div></div>
+    <div class="study-stats"><span>${idx+1} / ${sessionTotal}</span><span>✅ ${studyState.correct} &nbsp; ❌ ${studyState.wrong}</span></div>
+  </div>`;
+  renderCloze(body, word, progressHtml);
+}
+
+function rateAndNext(rating) {
+  if (rating === 0) studyState.wrong++;
+  else studyState.correct++;
+  applyRating(studyState.queue[studyState.idx], rating);
+  studyState.idx++;
+  studyState.flipped = false;
+  studyState.answered = false;
+  renderStudyCard();
+}
+
+function renderStudyComplete() {
+  const body = document.getElementById('study-body');
+  const due = getDueWords().length;
+  body.innerHTML = `
+    <div class="study-complete">
+      <div class="big-emoji">${studyState.wrong === 0 ? '🎉' : '📚'}</div>
+      <h3>${studyState.wrong === 0 ? '완벽해요!' : '오늘 학습 완료!'}</h3>
+      <p>틀린 단어들은 내일 다시 복습 예정이에요.<br>꾸준히 하면 확실히 외워져요!</p>
+      <div class="study-stat-row">
+        <div class="stat-box"><div class="num">${studyState.sessionTotal}</div><div class="lbl">학습 단어</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--green)">${studyState.correct}</div><div class="lbl">정답</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--red)">${studyState.wrong}</div><div class="lbl">오답</div></div>
+        ${due > 0 ? `<div class="stat-box"><div class="num" style="color:var(--yellow)">${due}</div><div class="lbl">남은 복습</div></div>` : ''}
+      </div>
+      ${due > 0 ? `<button class="study-reveal-btn" onclick="openStudy()">🔄 계속 학습 (${due}개 남음)</button>` : ''}
+      <button class="btn-secondary" onclick="closeStudy()" style="width:100%;padding:9px">닫기</button>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
 //  Events
 // ══════════════════════════════════════════════
 document.getElementById('upload-btn').addEventListener('click', () => document.getElementById('file-input').click());
@@ -1397,6 +1788,14 @@ document.getElementById('next-btn').addEventListener('click', () => { if (state.
 document.querySelectorAll('.vbtn').forEach(btn => btn.addEventListener('click', () => applyViewMode(btn.dataset.view)));
 document.getElementById('vocab-toggle').addEventListener('click', () => toggleSidebar());
 document.getElementById('sidebar-toggle-tab').addEventListener('click', () => toggleSidebar());
+document.getElementById('study-btn').addEventListener('click', openStudy);
+document.querySelectorAll('.study-tab').forEach(tab => tab.addEventListener('click', () => {
+  studyState.mode = tab.dataset.smode;
+  studyState.flipped = false; studyState.answered = false;
+  document.querySelectorAll('.study-tab').forEach(t => t.classList.toggle('active', t === tab));
+  renderStudyCard();
+}));
+document.getElementById('study-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeStudy(); });
 document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
 document.getElementById('close-settings-btn').addEventListener('click', closeSettings);
@@ -1464,7 +1863,11 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName==='INPUT') return;
   if (e.key==='ArrowRight'||e.key==='ArrowDown') document.getElementById('next-btn').click();
   if (e.key==='ArrowLeft' ||e.key==='ArrowUp')   document.getElementById('prev-btn').click();
-  if (e.key==='Escape') closeSettings();
+  if (e.key==='Escape') { closeSettings(); closeStudy(); }
+  if (e.key===' ' && document.getElementById('study-overlay').classList.contains('open')) {
+    e.preventDefault();
+    if (studyState.mode==='flashcard' && !studyState.flipped) flipCard();
+  }
 });
 
 // Drag-and-drop upload
