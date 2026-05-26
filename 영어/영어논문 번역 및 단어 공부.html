@@ -1670,7 +1670,8 @@ function renderFlashcard(body, word, progressHtml) {
 function renderCloze(body, word, progressHtml) {
   const info = allVocabulary[word] || {};
   const src = state.paperText || Object.values(state.pageTexts).join('\n');
-  const re = new RegExp(`\\b${word}(s|ed|ing|er|est)?\\b`, 'i');
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 정규식 특수문자 이스케이프
+  const re = new RegExp(`\\b${escaped}(s|ed|ing|er|est)?\\b`, 'i');
   const sentence = splitSentences(src)
     .map(s => s.replace(/\s+/g,' ').trim())
     .find(s => re.test(s) && s.length > 20 && s.length < 250) || '';
@@ -1715,8 +1716,6 @@ function flipCard() {
 function submitCloze(word, hasSentence) {
   const info = allVocabulary[word] || {};
   const val = (document.getElementById('cloze-input')?.value || '').trim().toLowerCase();
-  const inp = document.getElementById('cloze-input');
-  const fb  = document.getElementById('cloze-feedback');
 
   let correct = false;
   if (hasSentence) {
@@ -1727,15 +1726,9 @@ function submitCloze(word, hasSentence) {
     correct = val.length > 0 && koWords.some(k => val.includes(k) || k.includes(val));
   }
 
-  if (inp) inp.classList.add(correct ? 'correct' : 'err');
-  if (fb) {
-    fb.className = 'cloze-feedback ' + (correct ? 'ok' : 'err');
-    fb.textContent = correct
-      ? `✅ 정답! ${hasSentence ? '' : `(${info.korean||''})`}`
-      : `❌ 정답: ${hasSentence ? word : info.korean||'—'}`;
-  }
   studyState.answered = true;
-  // Re-render to show rating buttons (keep input visible)
+
+  // renderCloze 먼저 호출 (DOM 새로 생성) → 그 다음 피드백 주입
   const body = document.getElementById('study-body');
   const { idx, sessionTotal } = studyState;
   const pct = sessionTotal > 0 ? (idx / sessionTotal) * 100 : 0;
@@ -1744,6 +1737,17 @@ function submitCloze(word, hasSentence) {
     <div class="study-stats"><span>${idx+1} / ${sessionTotal}</span><span>✅ ${studyState.correct} &nbsp; ❌ ${studyState.wrong}</span></div>
   </div>`;
   renderCloze(body, word, progressHtml);
+
+  // 새로 생성된 DOM에 피드백 반영
+  const inp = document.getElementById('cloze-input');
+  const fb  = document.getElementById('cloze-feedback');
+  if (inp) { inp.value = val; inp.classList.add(correct ? 'correct' : 'err'); }
+  if (fb) {
+    fb.className = 'cloze-feedback ' + (correct ? 'ok' : 'err');
+    fb.textContent = correct
+      ? `✅ 정답! ${hasSentence ? '' : `(${info.korean||''})`}`
+      : `❌ 정답: ${hasSentence ? word : info.korean||'—'}`;
+  }
 }
 
 function rateAndNext(rating) {
@@ -1804,9 +1808,10 @@ document.getElementById('settings-overlay').addEventListener('click', e => { if 
 document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
 function clearVocab() {
   if (!confirm('정말 전체 단어장을 초기화할까요?\n저장된 모든 단어와 논문 기록이 삭제됩니다.')) return;
-  allVocabulary = {}; allPapers = {}; knownWords = new Set(); openFolders = new Set();
-  localStorage.removeItem(VOCAB_KEY); localStorage.removeItem(PAPERS_KEY); localStorage.removeItem(KNOWN_KEY);
-  renderVocabulary(); showToast('🗑️ 단어장이 초기화되었습니다');
+  allVocabulary = {}; allPapers = {}; knownWords = new Set(); openFolders = new Set(); srsData = {};
+  localStorage.removeItem(VOCAB_KEY); localStorage.removeItem(PAPERS_KEY);
+  localStorage.removeItem(KNOWN_KEY); localStorage.removeItem(SRS_KEY);
+  renderVocabulary(); updateStudyBadge(); showToast('🗑️ 단어장이 초기화되었습니다');
 }
 document.getElementById('clear-vocab-btn').addEventListener('click', () => { clearVocab(); closeSettings(); });
 document.getElementById('reset-vocab-btn').addEventListener('click', clearVocab);

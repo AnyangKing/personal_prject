@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Tester - OpenAI API 호환 채팅 도구</title>
+    <meta name="description" content="OpenAI API 표준을 따르는 AI 서비스를 간편하게 테스트할 수 있는 채팅 도구">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 사이드바: API 설정 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <h1>AI Chat Tester</h1>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="사이드바 토글">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 17l-5-5 5-5"></path>
+                        <path d="M18 17l-5-5 5-5"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="settings-section">
+                    <h2 class="section-title">API 설정</h2>
+                    
+                    <div class="form-group">
+                        <label for="baseUrl">Base URL</label>
+                        <input type="url" id="baseUrl" placeholder="https://api.openai.com/v1" autocomplete="off">
+                        <span class="hint">OpenAI 호환 API 엔드포인트</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="apiKey">API Key</label>
+                        <div class="input-with-icon">
+                            <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
+                            <button class="icon-btn" id="toggleApiKey" aria-label="API 키 표시/숨김">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modelName">모델명</label>
+                        <input type="text" id="modelName" placeholder="gpt-4o" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="temperature">
+                            Temperature: <span id="temperatureValue">0.7</span>
+                        </label>
+                        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                        <div class="range-labels">
+                            <span>정확</span>
+                            <span>균형</span>
+                            <span>창의적</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="section-title">시스템 프롬프트</h2>
+                    <div class="form-group">
+                        <textarea id="systemPrompt" rows="4" placeholder="AI의 역할과 행동을 정의하세요..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="btn btn-primary" id="saveSettings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        설정 저장
+                    </button>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 메인: 채팅 영역 -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <button class="sidebar-open-btn" id="sidebarOpenBtn" aria-label="사이드바 열기">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="chat-title">
+                    <span id="currentModel">모델 미설정</span>
+                    <span class="connection-status" id="connectionStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">설정 필요</span>
+                    </span>
+                </div>
+                <button class="btn btn-ghost" id="clearChat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                    대화 초기화
+                </button>
+            </header>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <h2>AI Chat Tester에 오신 것을 환영합니다</h2>
+                    <p>왼쪽 사이드바에서 API 설정을 완료한 후 채팅을 시작하세요.</p>
+                    <div class="welcome-features">
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            <span>API 키 로컬 저장</span>
+                        </div>
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <span>실시간 스트리밍</span>
+                        </div>
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span>Temperature 조절</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <textarea id="messageInput" placeholder="메시지를 입력하세요..." rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <p class="input-hint">Enter로 전송, Shift+Enter로 줄바꿈</p>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 토스트 알림 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
