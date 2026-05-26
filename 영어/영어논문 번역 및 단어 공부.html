@@ -1635,8 +1635,9 @@ function renderFlashcard(body, word, progressHtml) {
   const info = allVocabulary[word] || {};
   const { flipped } = studyState;
   const example = info.example || findExampleSentence(word);
+  const ew = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hlEx = example
-    ? example.replace(new RegExp(`\\b(${word}s?|${word}ing|${word}ed)\\b`, 'gi'), m => `<em>${m}</em>`)
+    ? example.replace(new RegExp(`\\b(${ew}s?|${ew}ing|${ew}ed)\\b`, 'gi'), m => `<em>${m}</em>`)
     : '';
   const paperName = (info.papers||[]).map(id => allPapers[id]?.title||'').filter(Boolean)[0] || '';
 
@@ -1909,6 +1910,7 @@ if (Object.keys(allVocabulary).length > 0) {
   renderVocabulary();
   setTimeout(() => repairBadKoreanMeanings(25), 600);
 }
+updateStudyBadge(); // 이전 세션 복습 단어 뱃지 표시
 </script>
 </body>
 </html>
