@@ -1298,9 +1298,10 @@ function renderWordDetail() {
   const example    = info.example || findExampleSentence(word);
   const isKnown    = knownWords.has(word);
 
-  // Highlight word in example
+  // Highlight word in example (특수문자 이스케이프)
+  const ew2 = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hlExample  = example
-    ? example.replace(new RegExp(`\\b(${word}s?|${word}ing|${word}ed)\\b`, 'gi'),
+    ? example.replace(new RegExp(`\\b(${ew2}s?|${ew2}ing|${ew2}ed)\\b`, 'gi'),
         m => `<em>${m}</em>`)
     : '';
 
@@ -1308,6 +1309,7 @@ function renderWordDetail() {
     <div class="detail-header">
       <span class="detail-word-en">${esc(word)}</span>
       <span class="detail-pos">${esc(info.pos||'')}</span>
+      <button class="detail-tts" onclick="speakWord('${esc(word)}')" title="발음 듣기">🔊</button>
       <button class="detail-know-btn ${isKnown?'known':''}" onclick="toggleKnown('${word}')" style="margin-left:auto">
         ${isKnown?'✓ 알고 있음':'알고 있어요'}
       </button>
@@ -1325,10 +1327,19 @@ function renderWordDetail() {
   `;
 }
 
+function speakWord(word) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(word);
+  utt.lang = 'en-US'; utt.rate = 0.9;
+  window.speechSynthesis.speak(utt);
+}
+
 function findExampleSentence(word) {
   const src = state.paperText || Object.values(state.pageTexts).join('\n');
   if (!src) return '';
-  const re = new RegExp(`\\b${word}\\b`, 'i');
+  const ew = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`\\b${ew}\\b`, 'i');
   return splitSentences(src).map(s => s.replace(/\s+/g,' ').trim()).find(s => re.test(s) && s.length > 20 && s.length < 300) || '';
 }
 
@@ -1647,6 +1658,7 @@ function renderFlashcard(body, word, progressHtml) {
         <div class="card-face card-front">
           <div class="card-word-en">${esc(word)}</div>
           ${info.pos ? `<div class="card-pos">[${esc(info.pos)}]</div>` : ''}
+          <button class="detail-tts" onclick="event.stopPropagation();speakWord('${esc(word)}')" title="발음 듣기" style="font-size:18px;padding:4px 8px">🔊</button>
           <div class="card-hint">클릭하여 뜻 확인 👆</div>
           ${paperName ? `<div class="card-paper">📄 ${esc(paperName.length>40?paperName.slice(0,40)+'…':paperName)}</div>` : ''}
         </div>
