@@ -522,9 +522,7 @@ select.setting-input { cursor: pointer; }
     <div class="setting-group">
       <label>번역 모델</label>
       <select class="setting-input" id="model-select">
-        <option value="gemini-3.5-flash">Gemini 3.5 Flash — 최신 (추천)</option>
-        <option value="gemini-2.5-flash">Gemini 2.5 Flash — 빠름</option>
-        <option value="gemini-2.5-pro">Gemini 2.5 Pro — 최고품질</option>
+        <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
       </select>
       <button class="btn-secondary" id="test-api-btn" style="margin-top:8px">연결 테스트</button>
       <div id="api-test-result"></div>
@@ -671,13 +669,9 @@ let openFolders   = new Set(Object.keys(allPapers)); // 폴더 열림 상태
 //  Gemini API
 // ══════════════════════════════════════════════
 const getGeminiModel = () => {
-  const m = localStorage.getItem(MODEL_KEY);
-  // 완전히 없거나 지원 종료된 구버전이면 3.5-flash로 교체
-  if (!m || m === 'gemini-2.0-flash' || m === 'gemini-1.5-pro') {
-    localStorage.setItem(MODEL_KEY, 'gemini-3.5-flash');
-    return 'gemini-3.5-flash';
-  }
-  return m;
+  // 2.5 이하 구버전은 모두 3.5-flash로 교체 (2.5는 2026-06-17 종료)
+  localStorage.setItem(MODEL_KEY, 'gemini-3.5-flash');
+  return 'gemini-3.5-flash';
 };
 const hasGeminiKey = () => true; // Cloud Function 사용 — 키 불필요
 
