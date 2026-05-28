@@ -522,7 +522,7 @@ select.setting-input { cursor: pointer; }
     <div class="setting-group">
       <label>번역 모델</label>
       <select class="setting-input" id="model-select">
-        <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
       </select>
       <button class="btn-secondary" id="test-api-btn" style="margin-top:8px">연결 테스트</button>
       <div id="api-test-result"></div>
@@ -669,9 +669,10 @@ let openFolders   = new Set(Object.keys(allPapers)); // 폴더 열림 상태
 //  Gemini API
 // ══════════════════════════════════════════════
 const getGeminiModel = () => {
-  // 2.5 이하 구버전은 모두 3.5-flash로 교체 (2.5는 2026-06-17 종료)
-  localStorage.setItem(MODEL_KEY, 'gemini-3.5-flash');
-  return 'gemini-3.5-flash';
+  // Vertex AI에서 확인된 사용 가능 모델로 고정
+  // (3.5-flash는 Vertex AI us-central1 미배포 — 추후 업데이트 예정)
+  localStorage.setItem(MODEL_KEY, 'gemini-2.5-flash');
+  return 'gemini-2.5-flash';
 };
 const hasGeminiKey = () => true; // Cloud Function 사용 — 키 불필요
 
@@ -832,15 +833,49 @@ async function translatePage(pageNum, text) {
   let result;
   if (useAI) {
     try {
-      result = await translateWithGemini(text); // 줄바꿈 유지한 원문 전달
+      result = await translateWithGemini(text);
     } catch (e) {
-      showToast(`⚠️ Gemini 오류: ${e.message} — MyMemory로 전환`);
-      result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
+      // 실패 시 재시도 버튼 표시
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 20px;text-align:center">
+          <div style="font-size:28px">⚠️</div>
+          <div style="color:var(--red);font-size:13px;font-weight:600">번역 실패</div>
+          <div style="color:var(--subtext0);font-size:12px;max-width:320px;line-height:1.6">${esc(e.message)}</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="retryTranslation(${pageNum})"
+              style="padding:8px 18px;background:var(--blue);color:var(--base);border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">
+              🔄 다시 시도
+            </button>
+            <button onclick="fallbackToMyMemory(${pageNum})"
+              style="padding:8px 18px;background:var(--surface0);color:var(--subtext0);border:1px solid var(--surface1);border-radius:7px;font-size:13px;cursor:pointer">
+              MyMemory로 번역
+            </button>
+          </div>
+        </div>`;
+      tag.textContent = '오류';
+      tag.className   = 'trans-engine-tag';
+      return;
     }
   } else {
     result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
   }
 
+  state.pageTranslations[pageNum] = result;
+  renderTranslation(result);
+}
+
+async function retryTranslation(pageNum) {
+  delete state.pageTranslations[pageNum]; // 캐시 삭제 후 재시도
+  const text = await extractPageText(pageNum);
+  await translatePage(pageNum, text);
+}
+
+async function fallbackToMyMemory(pageNum) {
+  const el  = document.getElementById('translation-content');
+  const tag = document.getElementById('trans-engine-tag');
+  el.innerHTML = `<div class="trans-loading"><span class="spinner"></span>&nbsp;MyMemory 번역 중...</div>`;
+  const text = await extractPageText(pageNum);
+  const result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
   state.pageTranslations[pageNum] = result;
   renderTranslation(result);
 }
