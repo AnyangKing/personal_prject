@@ -874,10 +874,24 @@ async function fallbackToMyMemory(pageNum) {
   const el  = document.getElementById('translation-content');
   const tag = document.getElementById('trans-engine-tag');
   el.innerHTML = `<div class="trans-loading"><span class="spinner"></span>&nbsp;MyMemory 번역 중...</div>`;
-  const text = await extractPageText(pageNum);
-  const result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
-  state.pageTranslations[pageNum] = result;
-  renderTranslation(result);
+  try {
+    const text = await extractPageText(pageNum);
+    const result = { type: 'mymemory', pairs: await translateWithMyMemory(text.replace(/\s+/g,' ').trim()) };
+    state.pageTranslations[pageNum] = result;
+    renderTranslation(result);
+  } catch (e) {
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 20px;text-align:center">
+        <div style="font-size:28px">⚠️</div>
+        <div style="color:var(--red);font-size:13px;font-weight:600">MyMemory 번역도 실패했습니다</div>
+        <div style="color:var(--subtext0);font-size:12px;line-height:1.6">${esc(e.message)}</div>
+        <button onclick="retryTranslation(${pageNum})"
+          style="padding:8px 18px;background:var(--blue);color:var(--base);border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">
+          🔄 다시 시도
+        </button>
+      </div>`;
+    tag.textContent = '오류'; tag.className = 'trans-engine-tag';
+  }
 }
 
 // 백그라운드에서 전체 페이지 순차 번역 (2페이지부터 — 1페이지는 메인에서 처리)
