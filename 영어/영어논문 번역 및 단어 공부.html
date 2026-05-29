@@ -671,7 +671,6 @@ let openFolders   = new Set(Object.keys(allPapers)); // 폴더 열림 상태
 const getGeminiModel = () => {
   // Vertex AI에서 확인된 사용 가능 모델로 고정
   // (3.5-flash는 Vertex AI us-central1 미배포 — 추후 업데이트 예정)
-  localStorage.setItem(MODEL_KEY, 'gemini-2.5-flash');
   return 'gemini-2.5-flash';
 };
 const hasGeminiKey = () => true; // Cloud Function 사용 — 키 불필요
@@ -812,8 +811,33 @@ async function translateWithMyMemory(text) {
 //  Page Translation (Claude or MyMemory)
 // ══════════════════════════════════════════════
 async function translatePage(pageNum, text) {
-  if (state.pageTranslations[pageNum]) {
-    renderTranslation(state.pageTranslations[pageNum]);
+  const cached = state.pageTranslations[pageNum];
+  if (cached) {
+    if (cached.type === 'error') {
+      // 이전에 실패한 페이지 — 재시도 UI 재표시 (Gemini 재시도 없이)
+      const el  = document.getElementById('translation-content');
+      const tag = document.getElementById('trans-engine-tag');
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 20px;text-align:center">
+          <div style="font-size:28px">⚠️</div>
+          <div style="color:var(--red);font-size:13px;font-weight:600">번역 실패</div>
+          <div style="color:var(--subtext0);font-size:12px;max-width:320px;line-height:1.6">${esc(cached.message || '')}</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="retryTranslation(${pageNum})"
+              style="padding:8px 18px;background:var(--blue);color:var(--base);border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">
+              🔄 다시 시도
+            </button>
+            <button onclick="fallbackToMyMemory(${pageNum})"
+              style="padding:8px 18px;background:var(--surface0);color:var(--subtext0);border:1px solid var(--surface1);border-radius:7px;font-size:13px;cursor:pointer">
+              MyMemory로 번역
+            </button>
+          </div>
+        </div>`;
+      tag.textContent = '오류';
+      tag.className   = 'trans-engine-tag';
+      return;
+    }
+    renderTranslation(cached);
     return;
   }
 
@@ -835,7 +859,8 @@ async function translatePage(pageNum, text) {
     try {
       result = await translateWithGemini(text);
     } catch (e) {
-      // 실패 시 재시도 버튼 표시
+      // 에러 센티넬 캐시 — 페이지 재방문 시 Gemini 재시도 방지
+      state.pageTranslations[pageNum] = { type: 'error', message: e.message };
       el.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 20px;text-align:center">
           <div style="font-size:28px">⚠️</div>
@@ -885,7 +910,7 @@ async function fallbackToMyMemory(pageNum) {
         <div style="font-size:28px">⚠️</div>
         <div style="color:var(--red);font-size:13px;font-weight:600">MyMemory 번역도 실패했습니다</div>
         <div style="color:var(--subtext0);font-size:12px;line-height:1.6">${esc(e.message)}</div>
-        <button onclick="retryTranslation(${pageNum})"
+        <button onclick="fallbackToMyMemory(${pageNum})"
           style="padding:8px 18px;background:var(--blue);color:var(--base);border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">
           🔄 다시 시도
         </button>
@@ -912,7 +937,18 @@ async function startBackgroundTranslation(sessionId) {
         state.pageTranslations[page] = result;
         updateBgProgress(page, state.totalPages);
       }
-    } catch {}
+    } catch {
+      // Gemini 실패 시 MyMemory로 폴백 시도
+      try {
+        const fallbackText = state.pageTexts[page] || '';
+        if (fallbackText.trim() && _bgTranslationId === sessionId) {
+          const result = { type: 'mymemory', pairs: await translateWithMyMemory(fallbackText.replace(/\s+/g,' ').trim()) };
+          if (_bgTranslationId !== sessionId) return;
+          state.pageTranslations[page] = result;
+          updateBgProgress(page, state.totalPages);
+        }
+      } catch {} // MyMemory도 실패하면 해당 페이지 스킵
+    }
     await sleep(300); // API 과부하 방지
   }
   updateBgProgress(null, state.totalPages); // 완료
@@ -925,8 +961,10 @@ function updateBgProgress(page, total) {
     el.textContent = '✅ 전체 번역 완료';
     setTimeout(() => { el.textContent = ''; }, 3000);
   } else {
-    const done = Object.keys(state.pageTranslations).length;
-    el.textContent = `⏳ 백그라운드 번역 중… ${done}/${total}`;
+    // 1페이지는 메인에서 처리되므로 2페이지부터 카운트
+    const bgDone  = Object.keys(state.pageTranslations).filter(p => Number(p) >= 2 && state.pageTranslations[p]?.type !== 'error').length;
+    const bgTotal = total - 1;
+    el.textContent = `⏳ 백그라운드 번역 중… ${bgDone}/${bgTotal}`;
   }
 }
 
