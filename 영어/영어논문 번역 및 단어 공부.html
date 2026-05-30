@@ -692,9 +692,13 @@ async function callGemini(prompt, maxTokens = 4096, jsonMode = false) {
         body,
         signal: controller.signal,
       });
-    } finally {
+    } catch (fetchErr) {
       clearTimeout(timeoutId);
+      // AbortError → 한국어 타임아웃 메시지로 변환
+      if (fetchErr.name === 'AbortError') throw new Error('번역 시간 초과 (60초) — 다시 시도해주세요');
+      throw fetchErr;
     }
+    clearTimeout(timeoutId);
 
     if (res.status === 503 || res.status === 429) {
       if (attempt < 2) {
@@ -925,7 +929,8 @@ async function startBackgroundTranslation(sessionId) {
   await sleep(2000); // 1페이지 번역 먼저 끝나도록 대기
   for (let page = 2; page <= state.totalPages; page++) {
     if (_bgTranslationId !== sessionId) return; // PDF 바뀌면 중단
-    if (state.pageTranslations[page]) continue;  // 이미 번역됨
+    const pgCache = state.pageTranslations[page];
+    if (pgCache && pgCache.type !== 'error') continue; // 이미 번역됨 (에러 센티넬은 재시도)
     try {
       const text = await extractPageText(page);
       if (_bgTranslationId !== sessionId) return;
@@ -1379,10 +1384,10 @@ function renderWordDetail() {
   const example    = info.example || findExampleSentence(word);
   const isKnown    = knownWords.has(word);
 
-  // Highlight word in example (특수문자 이스케이프)
+  // Highlight word in example (HTML 이스케이프 후 단어 강조 — XSS 방지)
   const ew2 = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hlExample  = example
-    ? example.replace(new RegExp(`\\b(${ew2}s?|${ew2}ing|${ew2}ed)\\b`, 'gi'),
+    ? esc(example).replace(new RegExp(`\\b(${ew2}s?|${ew2}ing|${ew2}ed)\\b`, 'gi'),
         m => `<em>${m}</em>`)
     : '';
 
@@ -1729,7 +1734,7 @@ function renderFlashcard(body, word, progressHtml) {
   const example = info.example || findExampleSentence(word);
   const ew = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hlEx = example
-    ? example.replace(new RegExp(`\\b(${ew}s?|${ew}ing|${ew}ed)\\b`, 'gi'), m => `<em>${m}</em>`)
+    ? esc(example).replace(new RegExp(`\\b(${ew}s?|${ew}ing|${ew}ed)\\b`, 'gi'), m => `<em>${m}</em>`)
     : '';
   const paperName = (info.papers||[]).map(id => allPapers[id]?.title||'').filter(Boolean)[0] || '';
 
@@ -1772,7 +1777,7 @@ function renderCloze(body, word, progressHtml) {
 
   const hasSentence = !!sentence;
   const displaySentence = hasSentence
-    ? sentence.replace(re, '<span class="cloze-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')
+    ? esc(sentence).replace(re, '<span class="cloze-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')
     : '';
 
   const { answered } = studyState;
