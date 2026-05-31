@@ -1253,6 +1253,7 @@ async function processVocabulary(fullText) {
 
   localStorage.setItem(VOCAB_KEY, JSON.stringify(allVocabulary));
   renderVocabulary();
+  updateStudyBadge(); // 빈도 기반 폴백 경로에서도 학습 뱃지 업데이트
   showToast(`✅ ${newCount}개 신규 단어 | 재등장 ${topWords.filter(w=>(allVocabulary[w.word]?.papers?.length||0)>1).length}개`);
 }
 
@@ -1649,8 +1650,9 @@ const studyState = {
 function saveSRS() { localStorage.setItem(SRS_KEY, JSON.stringify(srsData)); }
 
 function addDays(dateStr, days) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + days);
+  // 'Z'로 UTC 강제 파싱 — 로컬 타임존 혼입 방지 (한국 UTC+9 등에서 0일 간격 버그 방지)
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().split('T')[0];
 }
 
