@@ -1496,9 +1496,14 @@ async function loadPDF(file) {
     await renderPage(1);
 
     // Extract all text → vocabulary (background)
+    // paperId 스냅샷: 비동기 완료 시점에 PDF가 바뀌었으면 무시
+    const snapId = state.paperId;
     extractAllText().then(fullText => {
+      if (state.paperId !== snapId) return; // PDF 교체됨 — 무시
       state.paperText = fullText;
       processVocabulary(fullText);
+    }).catch(e => {
+      console.warn('텍스트 추출 실패:', e);
     });
 
     // 전체 페이지 백그라운드 번역 시작
@@ -1583,19 +1588,25 @@ async function testAPI() {
   const model = document.getElementById('model-select').value;
   const btn   = document.getElementById('test-api-btn');
   btn.textContent = `${model} 테스트 중...`; btn.disabled = true;
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
   try {
     const res = await fetch(CLOUD_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: 'Hi', maxTokens: 16, model, jsonMode: false }),
+      signal: controller.signal,
     });
     const d = await res.json();
     if (d.text !== undefined) showResult(`✅ [${model}] Vertex AI 연결 성공!`, true);
     else                      showResult(`❌ [${model}] ` + (d.error || '알 수 없는 오류'), false);
   } catch (e) {
-    showResult('❌ 네트워크 오류: ' + e.message, false);
+    const msg = e.name === 'AbortError' ? '연결 시간 초과 (15초)' : e.message;
+    showResult('❌ 네트워크 오류: ' + msg, false);
+  } finally {
+    clearTimeout(timeoutId);
+    btn.textContent = '연결 테스트'; btn.disabled = false;
   }
-  btn.textContent = '연결 테스트'; btn.disabled = false;
 }
 
 function showResult(msg, ok) {
