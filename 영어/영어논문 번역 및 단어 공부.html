@@ -2005,7 +2005,7 @@ document.addEventListener('drop', async e => {
 // ══════════════════════════════════════════════
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const today = ()  => new Date().toISOString().split('T')[0];
-const esc   = s   => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const esc   = s   => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function showToast(msg, duration=3000) {
   const t = document.getElementById('toast');
