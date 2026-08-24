@@ -1,21 +1,67 @@
-# 딥러닝 모델 파일 제외
+# 딥러닝 모델 파일
 *.pt
 *.pth
 *.h5
+*.hdf5
+*.mat
 *.npz
+*.npy
 *.pkl
 
-# 대용량 데이터 및 압축 파일 제외
+# 대용량 데이터 및 압축 파일
 *.zip
 *.tar.gz
-*.csv
-*.npy
 
-# 파이썬 실행 시 생기는 임시 폴더 제외
+# ML 실험 관련
+*.db
+*.save
+wandb/
+
+# Python 캐시
 __pycache__/
+*.pyc
+*.pyo
 .ipynb_checkpoints/
 
-# 윈도우 시스템 폴더 (Permission denied 방지)
+# LaTeX 빌드 산출물
+*.aux
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# 로그
+*.log
+
+# PunkRecords 예외 — 이 폴더 안에서는 추적해야 하는 파일
+!PunkRecords/**/*.pdf
+!PunkRecords/**/*.json
+!PunkRecords/**/*.csv
+
+# PunkRecords 로컬 전용 영역
+# 위 확장자 예외보다 뒤에 두어 지정 경로 안의 PDF·JSON·CSV도 다시 제외한다.
+PunkRecords/projects/*/data/
+PunkRecords/records/research-journal/
+PunkRecords/records/seminars/source-files/
+PunkRecords/work/
+PunkRecords/raw/references/**/source-files/
+PunkRecords/raw/references/**/extracted-files/
+PunkRecords/handbook/**/source-files/
+
+# PunkRecords 외부 논문 PDF 원본 (로컬 전용)
+PunkRecords/raw/papers/*.pdf
+
+# AI 툴 및 아나콘다 설정
+.anaconda/
+.claude*
+
+# 환경 변수
+*.env
+
+# 윈도우 시스템 폴더
 Application Data/
 Cookies/
 Local Settings/
@@ -28,28 +74,15 @@ Templates/
 "시작 메뉴/"
 Documents/
 
-# AI 툴 및 아나콘다 설정 파일
-.anaconda/
-.claude*
-.claude.json
-.claude.json.backup
+# 위 Windows 시스템 폴더 규칙이 PunkRecords/templates/를 가리지 않도록 예외 처리
+!PunkRecords/templates/
+!PunkRecords/templates/**
 
-# 기타 로그 및 데이터
-*.log
-*.pdf
-wandb/
+# OS
+.DS_Store
+Thumbs.db
 
-# API KEY
-*.env
-
-*.json
-*.js
-*.map
-*.wsam
-*.ts
-*.mjs
-*.yml
-*.conf
-*.css
-*.wasm
-*.yaml
+# 자동 스크립트 — 실행하면서 쌓이는 산출물 (소스만 추적)
+# 하위 폴더가 늘어나도 되도록 한 단계 와일드카드로 잡는다.
+자동 스크립트/*/data/
+자동 스크립트/*/리포트/
